@@ -52,3 +52,21 @@ Not yet measured. No instrumented run has executed. Every entry below is pending
 - What the Model Armor surface allows on this account tier — **not yet measured**
 - Scale-run behaviour at N≈150 — **not yet measured**
 - KAR-205 friction numbers — **not yet measured**
+
+### 2026-08-12 — The positional layer, verified by removing it
+
+The citation validator's third layer (positional identity) looks redundant beside the second
+(quote containment), and the difference only shows up on one input: a real quote lifted from
+span 12 and attributed to span 47, where the phrase genuinely occurs in both.
+
+Rather than assert that the layer matters, it was removed and the suite re-run. Exactly one
+test failed — the misattribution test. Restoring the layer restored the pass. That is the
+evidence that the test is testing the mechanism rather than passing for an unrelated reason,
+and it is cheap enough to be worth doing for every check whose necessity is not obvious.
+
+**Design note this produced.** `build_citation()` computes prefix and suffix from the
+rendition and is used only by fixtures, tests, and the appeal-packet exporter — never on the
+analysis path. On the analysis path the *model* supplies the context it saw. If Karani
+computed the context itself from the span the model named, layer 3 would be comparing the
+rendition against itself and would pass unconditionally: a check that can never fail, sitting
+in the position of the one that catches misattribution.
