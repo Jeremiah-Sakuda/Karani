@@ -106,7 +106,7 @@ def _extract_pdf(path: Path) -> Extracted:
     except Exception as exc:
         raise UnparseableSource(f"{path.name} could not be read as PDF: {exc}") from exc
 
-    raw = "\n\n".join(p.strip() for p in pages if p.strip())
+    raw = "\n\n".join(_rejoin_pdf_paragraphs(p) for p in pages if p.strip())
 
     if len(raw.strip()) < _PDF_TEXT_FLOOR:
         # No usable text layer. The document still enters the run — a student is not
@@ -120,3 +120,50 @@ def _extract_pdf(path: Path) -> Extracted:
         )
 
     return Extracted(text=raw, projection="pdf_text", kind="pdf", page_count=len(reader.pages))
+
+
+def _rejoin_pdf_paragraphs(page_text: str) -> str:
+    """Reconstruct paragraph boundaries from a PDF's hard-wrapped lines.
+
+    A PDF has no paragraphs. It has glyphs at coordinates, and `extract_text()` hands back
+    one line per typeset line, wrapped at whatever width the page used. Treating that output
+    as prose collapses an entire page into a single block: an 1,100-word essay became **two**
+    citable spans, which makes every citation resolve to "somewhere on this page" and quietly
+    destroys the point of having a span registry at all.
+
+    The heuristic: a wrapped line runs nearly the full measure, so the *last* line of a
+    paragraph is the one that both ends a sentence and falls visibly short of the column
+    width. Median line length is used as the measure rather than a fixed character count,
+    because it adapts to the document's own typesetting instead of assuming one.
+
+    This is genuinely a heuristic and the boundary is worth stating: a paragraph whose final
+    line happens to fill the measure merges with the next one, and a short line ending in an
+    abbreviation can split one paragraph in two. Both produce span boundaries that are wrong
+    by a paragraph — visible in the viewer, and never silent, because the citation still
+    resolves to text that contains the quote. The alternative, one span per page, is wrong by
+    a page every time.
+    """
+    lines = [ln.rstrip() for ln in page_text.splitlines()]
+    lines = [ln for ln in lines if ln.strip()]
+    if not lines:
+        return ""
+
+    widths = sorted(len(ln) for ln in lines)
+    median = widths[len(widths) // 2] or 1
+    # A line must fall meaningfully short of the measure to count as a paragraph ending.
+    short_enough = median * 0.85
+
+    paragraphs: list[str] = []
+    buffer: list[str] = []
+
+    for line in lines:
+        buffer.append(line.strip())
+        ends_sentence = line.rstrip().endswith((".", "!", "?", '"', "”", ":"))
+        if ends_sentence and len(line) < short_enough:
+            paragraphs.append(" ".join(buffer))
+            buffer = []
+
+    if buffer:
+        paragraphs.append(" ".join(buffer))
+
+    return "\n\n".join(p for p in paragraphs if p)

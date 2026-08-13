@@ -70,3 +70,73 @@ analysis path. On the analysis path the *model* supplies the context it saw. If 
 computed the context itself from the span the model named, layer 3 would be comparing the
 rendition against itself and would pass unconditionally: a check that can never fail, sitting
 in the position of the one that catches misattribution.
+
+### 2026-08-12 — Fixture corpus: separate passes are not sufficient for divergence
+
+PRD KAR-203 requires the fifteen submissions be generated "in separate passes… not
+reconciled against each other," and that a blind skim of any three show visibly different
+quality and voice. The first corpus was generated exactly that way — fifteen independent
+passes, none able to see any other's output — and it still failed.
+
+A blind reviewer, given the fifteen essays and told nothing about how they were made, found:
+
+- All fifteen took the **same position**. A real class does not.
+- Twelve of fifteen used the noun phrase "a 2024 municipal broadband study" **verbatim**.
+- One aphorism (*"not a failure of effort but of arithmetic"*) appeared, restyled, in five.
+- A twelve-word clause about a service appointment appeared **verbatim** in two essays that
+  were supposed to be the two most stylistically distant in the set.
+- Invented source surnames recombined from a pool of ten; the page number "41" anchored five
+  different essays; the same fabricated author was male in one essay and female in another.
+
+The sharpest observation was structural rather than lexical: *"each weak essay carries
+exactly one engineered lesion. Real weak student writing fails on four axes at once and in
+ways nobody designed."* Every paper had a locatable thesis, conceded the same objection in
+the same slot, and committed no fallacy. The corpus tested register discrimination and
+nothing else.
+
+**What separate passes actually buy.** Independence of *context*, not independence of
+*prior*. Fifteen blind passes over one prompt sample fifteen times from the same
+distribution, and the mode is heavily favoured every time. The variation instruction was
+being applied to style because style is where the instruction pointed; the argument
+underneath was never asked to move.
+
+**The fix, and it is not "more variety" in the brief.** Divergence had to be forced at the
+level where convergence happened: each writer was assigned a **position** (six for, five
+against, four qualified), a **disjoint source pool** with non-overlapping invented surnames
+and page ranges, an explicit **ban list** of every shared phrase the reviewer found, a
+distinct **structural template**, and — for the weak papers — instructions to fail on
+several axes at once rather than carry one tidy defect. The second corpus's banned-token
+sweep returns zero hits on every shared surname and shared phrase from the first.
+
+**Worth generalising.** "Generate them independently" is a weaker guarantee than it sounds.
+For any fixture corpus meant to represent a population, the axis of variation has to be
+specified and allocated, not requested.
+
+### 2026-08-12 — PDF extraction: page granularity destroys the span registry
+
+First run over the real fixtures: the three PDF submissions produced **2, 2, and 1** spans,
+against 6–12 for the same length of text in `.md` and `.docx`. An 1,164-word essay had two
+citable regions.
+
+`pypdf.extract_text()` returns one line per *typeset* line, and a PDF has no paragraphs to
+recover — only glyphs at coordinates. Joining pages with a blank line therefore makes each
+page a single paragraph, and the span registry silently degrades to page granularity. Nothing
+errors. Citations still validate, quotes still match, `sha256` still agrees. Click-to-locus
+just resolves to "somewhere on this page," which is the whole value of the registry gone
+while every check stays green.
+
+**The reconstruction now used:** a wrapped line runs nearly the full measure, so the last line
+of a paragraph is the one that both ends a sentence and falls short of the column width.
+Median line length per page supplies the measure, so it adapts to the document's own
+typesetting rather than assuming one. Result: 8, 8, and 3 spans, with words-per-span for the
+PDFs (151, 120, 116) now inside the range the other formats produce (49–197).
+
+**The honest boundary**, since this is a heuristic and not a parse: a paragraph whose final
+line happens to fill the measure merges with its successor, and a short line ending in an
+abbreviation splits one paragraph in two. Both produce a span boundary wrong by a paragraph.
+That is visible in the viewer and never silent — the citation still resolves to text
+containing the quote. One span per page is wrong by a page, every time.
+
+**Toolchain note:** the PDFs did *not* degrade to `doc_only`. The text layer was present and
+exact; what degraded was structure, which is a quieter failure than a missing text layer
+because every integrity check passes.
