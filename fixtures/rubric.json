@@ -1,0 +1,32 @@
+{
+  "rubric_id": "engl101-essay3",
+  "assignment": "ENGL 101, Essay 3 — Municipal broadband: should city governments build and operate their own broadband networks? Take a position, support it with at least two sources, and address at least one objection. 750–1100 words, MLA-style in-text citations.",
+  "_note": "Criteria describe what a grader looks for evidence OF. No criterion carries a scale, a level, or a weight. A rubric with a points column would put a number in the one place this system is built not to produce one, and Karani's analyst never sees a scale because there is none to see.",
+  "criteria": [
+    {
+      "criterion_id": "c1",
+      "name": "Thesis and controlling claim",
+      "description": "A position on the question is stated, and the essay's later paragraphs are governed by it."
+    },
+    {
+      "criterion_id": "c2",
+      "name": "Evidence and source use",
+      "description": "Sources are introduced, quoted or paraphrased accurately, cited, and connected to the claim they are offered in support of."
+    },
+    {
+      "criterion_id": "c3",
+      "name": "Organization and coherence",
+      "description": "Paragraphs follow an order a reader can track, and transitions mark the relationship between them."
+    },
+    {
+      "criterion_id": "c4",
+      "name": "Engagement with counterarguments",
+      "description": "An objection to the essay's position is stated and then responded to, rather than named and abandoned."
+    },
+    {
+      "criterion_id": "c5",
+      "name": "Sentence-level clarity and mechanics",
+      "description": "Sentence boundaries, agreement, and punctuation are handled such that the argument is followable at the sentence level."
+    }
+  ]
+}

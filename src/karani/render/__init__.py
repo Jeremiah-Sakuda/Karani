@@ -75,6 +75,7 @@ class RenderedRun:
     excluded: list[dict[str, Any]]
     source_events: list[str]
     range_hash: str
+    renditions: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -103,6 +104,7 @@ class RenderedRun:
                 for a in self.anomalies
             ],
             "excluded": self.excluded,
+            "renditions": self.renditions,
             # Divergence is detectable, not assumed: an artifact names the events it consumed
             # and hashes them, so `scripts/verify_artifact.py` can re-fold and compare rather
             # than take the artifact's word for its own provenance.
@@ -132,6 +134,7 @@ def render(run_id: str, events: list[Event]) -> RenderedRun:
     anomalies: list[AnomalyItem] = []
     excluded: list[dict[str, Any]] = []
     injection_flagged: set[str] = set()
+    renditions: dict[str, dict[str, Any]] = {}
 
     def student(sid: str) -> dict[str, Any]:
         return students.setdefault(sid, {"source_projection": "text", "criteria": set()})
@@ -142,6 +145,17 @@ def render(run_id: str, events: list[Event]) -> RenderedRun:
 
         if event.step is Step.SUBMISSION_INGESTED:
             student(sid)["source_projection"] = p.get("source_projection", "text")
+
+        elif event.step is Step.RENDITION_FROZEN:
+            # Carried so the docket's viewer resolves citations from the log alone.
+            if p.get("text"):
+                renditions[sid] = {
+                    "rendition_id": p.get("rendition_id", ""),
+                    "text": p["text"],
+                    "spans": p.get("spans", {}),
+                    "anchor_capability": p.get("anchor_capability", "exact"),
+                    "source_projection": p.get("source_projection", "text"),
+                }
 
         elif event.step is Step.INJECTION_DETECTED:
             injection_flagged.add(sid)
@@ -323,6 +337,7 @@ def render(run_id: str, events: list[Event]) -> RenderedRun:
         excluded=sorted(excluded, key=lambda x: str(x["student_id"])),
         source_events=source_events,
         range_hash=range_hash,
+        renditions=renditions,
     )
 
 

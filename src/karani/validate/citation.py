@@ -64,12 +64,41 @@ class ValidationResult:
 
 
 def context_around(text: str, start: int, end: int, width: int = CONTEXT_CHARS) -> tuple[str, str]:
-    """The `width` characters on each side of `text[start:end]`.
+    """The `width` characters on each side of `text[start:end]`, truncated at the boundaries.
 
-    Truncated rather than padded at document boundaries: a quote opening a document has a
-    shorter prefix, and inventing padding would make two different positions compare equal.
+    Truncated rather than padded: a quote opening its span has a shorter prefix, and inventing
+    padding would make two genuinely different positions compare equal.
+
+    **Context is span-local, and that is a correctness requirement rather than a simplification.**
+
+    The analyst sees the submission as `[[sp-0011]] <paragraph> \\n\\n [[sp-0012]] <paragraph>`.
+    If context were defined across the whole rendition, then for any quote near the start of a
+    paragraph the 32 characters the *model* saw would include the span marker and the tail of
+    the previous paragraph, while the 32 characters the *validator* computes from the rendition
+    would not — the marker exists only in the prompt. The two would disagree, the citation
+    would be rejected at layer 3, and the rejection would be entirely spurious.
+
+    That failure is quiet and systematic: it fires only for quotes near a paragraph boundary,
+    it looks exactly like a genuine misattribution, and the retry produces the same
+    "mismatch" again. It would have shown up on the live path as an inexplicable escalation
+    rate concentrated on first sentences.
+
+    Defining the window as span-local makes it identically computable by both sides: the model
+    is told the context is bounded by the span it is citing, and the validator bounds it the
+    same way. The misattribution defence is unaffected — a phrase occurring in two spans is
+    still separated by what precedes it *within* each span.
     """
     return text[max(0, start - width) : start], text[end : end + width]
+
+
+def span_local_context(
+    span_text: str, offset: int, quote_length: int, width: int = CONTEXT_CHARS
+) -> tuple[str, str]:
+    """Context around a quote, bounded by the span containing it."""
+    return (
+        span_text[max(0, offset - width) : offset],
+        span_text[offset + quote_length : offset + quote_length + width],
+    )
 
 
 def validate_citation(
@@ -144,9 +173,7 @@ def validate_citation(
     matched = False
     offset = span_text.find(citation.quote)
     while offset != -1:
-        abs_start = span.char_start + offset
-        abs_end = abs_start + len(citation.quote)
-        prefix, suffix = context_around(rendition_text, abs_start, abs_end)
+        prefix, suffix = span_local_context(span_text, offset, len(citation.quote))
         if prefix == citation.prefix and suffix == citation.suffix:
             matched = True
             break
@@ -219,8 +246,7 @@ def build_citation(
     offset = span_text.find(quote)
     if offset == -1:
         raise ValueError(f"quote does not occur in span {span_id!r}")
-    abs_start = span.char_start + offset
-    prefix, suffix = context_around(rendition_text, abs_start, abs_start + len(quote))
+    prefix, suffix = span_local_context(span_text, offset, len(quote))
     return Citation(
         span_id=span_id,
         quote=quote,

@@ -24,6 +24,29 @@ from typing import Protocol, runtime_checkable
 # function of the roster rather than of directory listing order.
 SUPPORTED_SUFFIXES = (".md", ".markdown", ".txt", ".docx", ".pdf")
 
+# Files that live in a submissions folder without being submissions.
+#
+# This is not hypothetical tidiness. Running over this repository's own fixture directory
+# ingested `MANIFEST.md` and produced a student called "MANIFEST" — with a rendition, a span
+# registry, five observations, and a place in the class overview. A real instructor's folder
+# contains the assignment sheet, the rubric, a syllabus excerpt, and whatever the LMS dropped
+# in, and every one of them would have become a student.
+#
+# The failure is quiet, which is what makes it worth a hard exclusion rather than a warning:
+# the fabricated student's sheet renders perfectly and reads exactly like every other sheet.
+#
+# Deterministic by name, because ingest must not depend on a model call. The general case --
+# a file that is genuinely ambiguous, or a submission in the wrong language, or a scan of
+# something that is not an essay -- is what the triage tier is for (KAR-315); this list only
+# has to catch the names that are certain.
+NON_SUBMISSION_STEMS = frozenset(
+    {
+        "readme", "manifest", "license", "licence", "notice", "contributing",
+        "changelog", "rubric", "syllabus", "assignment", "instructions", "prompt",
+        "index", "notes", "template", "example", "sample", "gradebook", "roster",
+    }
+)
+
 
 @dataclass(frozen=True)
 class SubmissionRef:
@@ -59,6 +82,8 @@ class LocalSource:
         for path in sorted(self.root.iterdir()):
             if not path.is_file() or path.suffix.lower() not in SUPPORTED_SUFFIXES:
                 continue
+            if is_non_submission(path):
+                continue
             student_id = path.stem
             current = by_student.get(student_id)
             if current is None or _rank(path) < _rank(current):
@@ -74,6 +99,16 @@ class LocalSource:
 
     def read_bytes(self, ref: SubmissionRef) -> bytes:
         return ref.path.read_bytes()
+
+
+def is_non_submission(path: Path) -> bool:
+    """True for files that belong in a submissions folder without being submissions.
+
+    Matched on the normalized stem so `MANIFEST.md`, `manifest.md`, and `Manifest.MD` are all
+    excluded, and dotfiles are skipped outright.
+    """
+    stem = path.stem.strip().lower().replace("-", "_").replace(" ", "_")
+    return path.name.startswith(".") or stem in NON_SUBMISSION_STEMS
 
 
 def _rank(path: Path) -> int:

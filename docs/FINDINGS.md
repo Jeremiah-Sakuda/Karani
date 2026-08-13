@@ -140,3 +140,59 @@ containing the quote. One span per page is wrong by a page, every time.
 **Toolchain note:** the PDFs did *not* degrade to `doc_only`. The text layer was present and
 exact; what degraded was structure, which is a quieter failure than a missing text layer
 because every integrity check passes.
+
+### 2026-08-12 — Positional identity was defined against the wrong text
+
+The citation validator's third layer compares the context the model reports around its quote
+against the context Karani computes from the source. The first end-to-end run over the real
+fixtures rejected almost every citation at that layer.
+
+The cause is a mismatch nobody would notice by reading either side alone. The analyst sees
+the submission as `[[sp-0011]] <paragraph>\n\n[[sp-0012]] <paragraph>`. The validator computes
+context from the **rendition**, which contains no span markers. For a quote in the middle of a
+paragraph the two agree. For a quote near the *start* of one, the 32 characters the model saw
+include `[[sp-0012]] ` and the tail of the previous paragraph, and the 32 the validator
+computes do not. The citation is rejected, the retry produces the identical "mismatch", and
+the observation escalates.
+
+**Why this was worth stopping for.** The failure is quiet, systematic, and disguised: it fires
+only near paragraph boundaries, it is indistinguishable from a genuine misattribution in the
+logs, and it would have surfaced on the deployed path as an unexplained escalation rate
+concentrated on first sentences — the sentences most likely to carry a thesis, which is the
+one criterion an instructor most wants evidence for.
+
+**Fix:** context is now **span-local**, bounded by the span being cited, and the prompt says so
+explicitly ("do not read across into a neighbouring span, never include a `[[sp-NNNN]]`
+marker"). Both sides now compute the same window from the same text. The misattribution
+defence is unaffected: a phrase occurring in two spans is still separated by what precedes it
+*within* each span, which the unit fixture confirms — the same-phrase-in-span-12-and-span-47
+test still passes, and still fails when the layer is removed.
+
+**Generalisable:** when a model is asked to report something that will be checked, the thing it
+sees and the thing the checker sees must be the same artifact. Interleaving anything into the
+prompt — markers, line numbers, annotations — silently makes them different.
+
+### 2026-08-12 — The pipeline invented a student called MANIFEST
+
+Running over the fixture directory dispatched **17** submissions where 16 exist. The
+seventeenth was `MANIFEST.md`: it was ingested, frozen into a rendition, given a span registry,
+analysed against all five criteria, and rendered into the class overview as a student.
+
+Its evidence sheet looked exactly like every other evidence sheet.
+
+This is not a fixture-directory quirk. A real instructor's submissions folder contains the
+assignment sheet, the rubric, a syllabus excerpt, and whatever the LMS exported alongside the
+student work — and every one of them would have become a student with observations and a place
+in the roster. The overview's own counts would have been wrong while looking authoritative,
+which is the failure mode this project's "never display a hardcoded literal as a live count"
+rule exists to prevent, arriving from a direction the rule did not anticipate.
+
+**Fix:** a deterministic name-based exclusion at the source (`readme`, `manifest`, `rubric`,
+`syllabus`, `assignment`, `roster`, dotfiles, and similar), applied before ingest. Deterministic
+rather than model-mediated, because ingest must not depend on a model call. The genuinely
+ambiguous cases — a file that might be an essay, a submission in an unexpected language, a scan
+of something that is not an essay — remain the triage tier's job (KAR-315).
+
+**What made it findable:** the end-to-end test asserted `len(dispatched) == 16` against a hand
+counted expectation. An assertion that had said "every dispatched unit reaches a terminal
+state" alone would have passed — MANIFEST reached one.

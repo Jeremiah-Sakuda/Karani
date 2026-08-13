@@ -98,6 +98,19 @@ def analyze_submission(
                 "student_id": ref.student_id,
                 "rendition_id": rendition.rendition_id,
                 "span_count": len(registry.spans),
+                "source_projection": rendition.source_projection,
+                "anchor_capability": rendition.anchor_capability,
+                # The frozen text and its span map travel *in the event*, which costs a few
+                # kilobytes per submission and buys the invariant outright: the docket's
+                # click-to-locus viewer renders from the log and nothing else. If the text
+                # lived in a side table, "one append-only log drives every artifact" would
+                # be true of the evidence sheets and false of the thing the instructor
+                # actually looks at when deciding whether a citation is fair.
+                "text": rendition.text,
+                "spans": {
+                    span_id: [span.char_start, span.char_end]
+                    for span_id, span in registry.spans.items()
+                },
             },
         )
     )

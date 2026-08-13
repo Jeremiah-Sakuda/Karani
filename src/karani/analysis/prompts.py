@@ -59,11 +59,16 @@ ABSOLUTE CONSTRAINTS
    punctuation, exact capitalisation. Do not normalise, tidy, trim, or paraphrase it.
 
 4. For each quote you must report the {CONTEXT_CHARS} characters immediately BEFORE it and the
-   {CONTEXT_CHARS} characters immediately AFTER it, exactly as they appear in the document,
-   including spaces and punctuation. If the quote begins the document, the prefix is shorter
-   or empty; the same applies to the suffix at the end. These are checked against the source.
-   A phrase can occur in more than one span, so this is how a citation proves it points at the
-   passage it was actually taken from.
+   {CONTEXT_CHARS} characters immediately AFTER it, exactly as they appear, including spaces
+   and punctuation.
+
+   IMPORTANT: this context is bounded by THE SPAN YOU ARE CITING. Do not read across into a
+   neighbouring span, and never include a [[sp-NNNN]] marker in the prefix or suffix. If the
+   quote starts fewer than {CONTEXT_CHARS} characters into its span, the prefix is simply
+   shorter -- possibly empty. The same applies to the suffix at the end of a span. Do not pad.
+
+   These are checked against the source. A phrase can occur in more than one span, so this is
+   how a citation proves it points at the passage it was actually taken from.
 
 5. If you cannot locate evidence for a criterion, return kind "no_evidence" with search_notes
    describing WHERE YOU LOOKED. search_notes is a statement about your search, never about the
