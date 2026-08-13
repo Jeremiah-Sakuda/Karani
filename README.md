@@ -30,16 +30,27 @@ validates every citation four ways, flags the criteria where it could find nothi
 what it is not sure about, and assembles per-student evidence sheets plus a class overview. In
 the morning the instructor ratifies feedback in batch and writes every grade personally.
 
-The grades go into a Firestore collection that **no pipeline service account can write to** —
-asserted in the emulator, asserted on the deployed path, and shown being denied on camera.
+The grades go into a Firestore collection that **no pipeline service account can write to**.
+That boundary is enforced twice — by Firestore rules on the browser path and by a custom IAM
+role granting `create` and `get` on the service-account path — because a service account never
+evaluates Firestore rules and an emulator never evaluates IAM, so each mechanism is invisible
+to the other's test.
+
+*Verification status, stated precisely:* the rules, the custom role, and the negative-test
+matrix are in this repository and the matrix is read directly by the test suite. The
+**deployed-path** assertion (`pytest -m deployed`) has **not yet run**, because the Google
+Cloud project does not have billing enabled. Until it does, the language discipline in
+`AGENTS.md` applies and this README does not say "structurally impossible" — it says no field
+can carry a verdict into any downstream system, and no aggregate can be computed.
 
 ## What makes this different from an auto-grader
 
 An auto-grader's product is the score. Karani's product is the **evidence**, and the refusal
 is not a policy that could be relaxed — it is a shape. There is no field on any record in this
 system that could hold a grade. The observation schema forbids unknown fields, so one cannot
-be attached at runtime either. The public challenge box on the hosted docket lets anyone try:
-it answers with the schema itself.
+be attached at runtime either. The public challenge box answers with the schema itself — run `make docket-golden`
+and open `/challenge`. (It is not yet hosted: nothing is deployed, because the Google Cloud
+project does not have billing enabled.)
 
 **Karani's output is designed to be contestable.** Supersession instead of mutation. Diff
 across runs. Absence as a first-class value. Escalation instead of guessing. An appeal packet

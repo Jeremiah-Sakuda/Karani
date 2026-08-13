@@ -74,9 +74,31 @@ if ! have firestore databases describe --database='(default)'; then
 fi
 gcloud firestore databases update --database='(default)' --delete-protection 2>/dev/null || true
 
+# Firestore security rules are deployed by the Firebase CLI, not by gcloud -- there is no
+# `gcloud firestore rules` command group. An earlier version of this script called one and
+# swallowed the failure, so it reported success while the rules were never deployed: the
+# browser-path half of the append-only guarantee silently absent on a project that looked
+# fully provisioned.
 if [[ -f deploy/firestore.rules ]]; then
-  gcloud firestore rules release deploy/firestore.rules 2>/dev/null \
-    || echo "note: deploy rules via 'firebase deploy --only firestore:rules' if this project uses Firebase tooling"
+  if command -v firebase >/dev/null 2>&1; then
+    firebase deploy --only firestore:rules --project "$PROJECT" \
+      || { echo "ERROR: firestore rules failed to deploy. The browser write path is UNGUARDED." >&2; exit 1; }
+  else
+    cat >&2 <<'RULES'
+
+ACTION REQUIRED -- Firestore rules are NOT deployed.
+
+deploy/firestore.rules guards the browser write path (KAR-102, KAR-312). The custom IAM
+role covers service accounts; these rules cover everything else, and neither substitutes
+for the other.
+
+  npm i -g firebase-tools && firebase login
+  firebase deploy --only firestore:rules --project PROJECT_ID
+
+Not deploying them leaves grades/ writable from a browser session. This script will not
+pretend otherwise.
+RULES
+  fi
 fi
 
 # --- custom role: create + get, no update, no delete -----------------------------------

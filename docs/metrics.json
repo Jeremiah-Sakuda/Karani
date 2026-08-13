@@ -165,42 +165,42 @@
       "value": 15,
       "unit": "count",
       "method": "counted by freezing every file the local source discovers",
-      "measured_at": "2026-08-13T04:36:16.386636+00:00",
+      "measured_at": "2026-08-13T04:38:54.538021+00:00",
       "surface": "local"
     },
     "submissions_unparseable": {
       "value": 1,
       "unit": "count",
       "method": "files that raised UnparseableSource during freeze",
-      "measured_at": "2026-08-13T04:36:16.386636+00:00",
+      "measured_at": "2026-08-13T04:38:54.538021+00:00",
       "surface": "local"
     },
     "words_total": {
       "value": 14304,
       "unit": "count",
       "method": "whitespace-split over normalized rendition text",
-      "measured_at": "2026-08-13T04:36:16.386636+00:00",
+      "measured_at": "2026-08-13T04:38:54.538021+00:00",
       "surface": "local"
     },
     "citable_spans_total": {
       "value": 138,
       "unit": "count",
       "method": "span registries minted from the frozen renditions",
-      "measured_at": "2026-08-13T04:36:16.386636+00:00",
+      "measured_at": "2026-08-13T04:38:54.538021+00:00",
       "surface": "local"
     },
     "planted_problems_total": {
       "value": 6,
       "unit": "count",
       "method": "enumerated in fixtures/MANIFEST.md",
-      "measured_at": "2026-08-13T04:36:16.386636+00:00",
+      "measured_at": "2026-08-13T04:38:54.538021+00:00",
       "surface": "local"
     },
     "planted_problems_found": {
       "value": 6,
       "unit": "count",
       "method": "each plant re-checked against live pipeline behaviour, not against the manifest",
-      "measured_at": "2026-08-13T04:36:16.386636+00:00",
+      "measured_at": "2026-08-13T04:38:54.538021+00:00",
       "surface": "local"
     },
     "planted_problems_detail": {
@@ -214,7 +214,7 @@
       },
       "unit": "map",
       "method": "per-plant behavioural check",
-      "measured_at": "2026-08-13T04:36:16.386636+00:00",
+      "measured_at": "2026-08-13T04:38:54.538021+00:00",
       "surface": "local"
     }
   },
@@ -224,14 +224,14 @@
       "value": 24,
       "unit": "count",
       "method": "folded from fixtures/golden-log.jsonl",
-      "measured_at": "2026-08-13T04:36:16.386636+00:00",
+      "measured_at": "2026-08-13T04:38:54.538021+00:00",
       "surface": "local"
     },
     "sheets": {
       "value": 6,
       "unit": "count",
       "method": "evidence sheets produced by the fold",
-      "measured_at": "2026-08-13T04:36:16.386636+00:00",
+      "measured_at": "2026-08-13T04:38:54.538021+00:00",
       "surface": "local"
     },
     "terminal_outcomes": {
@@ -245,23 +245,23 @@
       },
       "unit": "map",
       "method": "counted by render(); all six must be non-zero (asserted by tests/test_replay.py)",
-      "measured_at": "2026-08-13T04:36:16.386636+00:00",
+      "measured_at": "2026-08-13T04:38:54.538021+00:00",
       "surface": "local"
     },
     "range_hash": {
       "value": "c09d59229b55bcaeed9ed96ecdfed1a160da68b5829927a20b598b42d0b999d4",
       "unit": "sha256",
       "method": "hash over the content hashes of every consumed event",
-      "measured_at": "2026-08-13T04:36:16.386636+00:00",
+      "measured_at": "2026-08-13T04:38:54.538021+00:00",
       "surface": "local"
     }
   },
   "suite": {
     "tests_collected": {
-      "value": 144,
+      "value": 154,
       "unit": "count",
       "method": "pytest --collect-only, default markers (no credentials, no emulator, no model calls)",
-      "measured_at": "2026-08-13T04:36:16.386636+00:00",
+      "measured_at": "2026-08-13T04:38:54.538021+00:00",
       "surface": "local"
     }
   }
