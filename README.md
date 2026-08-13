@@ -74,6 +74,28 @@ this repository.
 
 *Source: [diagram_b_identity.svg](docs/architecture/diagram_b_identity.svg), generated from [deploy/iam/negative-matrix.yaml](deploy/iam/negative-matrix.yaml), which [tests/test_iam_boundary.py](tests/test_iam_boundary.py) reads directly.*
 
+## What it looks like
+
+![The Karani class docket: a run header, a panel of six terminal-outcome counts, a table of submissions listed by identifier with chips for injection-flagged and insufficient sheets, per-criterion counts of evidence located and no-evidence findings, and an anomaly queue](docs/screenshots/docket-overview.png)
+
+The class overview. Six terminal outcomes from one unattended run, then the submissions —
+**listed by identifier, with no sort control**, because the first thing anyone does with one
+is sort by something that proxies for quality and then read the top of the list as the best
+work. Every count is a length over the claims projection, never generated.
+
+![An evidence sheet showing a no-evidence observation: the criterion, a "no evidence located" chip, the statement that no passage was located, and the search notes recording which spans were scanned](docs/screenshots/evidence-sheet.png)
+
+An evidence sheet. This one is the `no_evidence` case — a first-class finding with
+`search_notes` recording *what was searched*, never a judgement about the work, and never
+retried.
+
+![The public challenge page answering "what grade would s01 get?" by listing every field on the observation schema and stating that none of them holds a score, followed by the four defensive layers in order with the display lint labelled last and weakest](docs/screenshots/challenge.png)
+
+The public challenge box, answering with the schema's own field list. The four layers are
+named in the order they actually hold, and the lint is labelled **last and weakest** —
+because a system that presents its flimsiest defence as its strongest is inviting the attack
+that defeats it.
+
 ## The six terminal outcomes
 
 The autonomy claim is not "it ran unattended." It is that **one unattended run produces six
