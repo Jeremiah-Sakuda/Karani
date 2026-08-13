@@ -1,0 +1,31 @@
+# Custom IAM role for every pipeline service account (KAR-102).
+#
+# The whole point is what is ABSENT. `datastore.entities.create` and `.get` are granted;
+# `.update` and `.delete` are not. A pipeline identity holding this role cannot rewrite
+# history even if the application code tried to, which is what makes the append-only property
+# a property of the system rather than a property of the code being correct.
+#
+# This is deliberately NOT roles/datastore.user. That predefined role includes update and
+# delete, and granting it "for now, we'll be careful in the code" is the exact shape of the
+# mistake this file exists to prevent.
+#
+#   gcloud iam roles create karaniAppendOnly --project=$PROJECT \
+#     --file=deploy/iam/karani-append-only.yaml
+
+title: "Karani append-only event writer"
+description: >
+  Create and read Firestore entities. No update, no delete. Held by every pipeline service
+  account so that the append-only event log cannot be mutated by the pipeline that writes it.
+  Absence of datastore.entities.update and .delete is the entire purpose of this role.
+stage: GA
+includedPermissions:
+  - datastore.entities.create
+  - datastore.entities.get
+  - datastore.entities.list
+  - datastore.databases.get
+  - datastore.indexes.list
+# Deliberately excluded, and listed here so a future editor has to actively add them back:
+#   datastore.entities.update
+#   datastore.entities.delete
+#   datastore.databases.delete
+#   datastore.entities.allocateIds

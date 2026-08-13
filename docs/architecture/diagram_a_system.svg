@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 760" width="1180" height="760" font-family="Inter, Helvetica, Arial, sans-serif">
+  <title>Karani system architecture: one append-only log drives every artifact, and grades/ is unreachable from it</title>
+  <desc>Cloud Scheduler triggers a Cloud Run Job. The dispatcher fans out one task per submission through ingest, rendition freeze, Gemma triage and an injection scan, into analyst workers on Gemini 3.6 Flash. Every step appends to a create-only Firestore event log. A citation validator accepts, rejects up to twice, or escalates to a human. A terminal-state join with a wall-clock deadline feeds render(runId), a pure fold that is the sole writer of evidence sheets, the class overview and the claims projection. Output reaches a Cloud Run docket service and a delivery step writing one Drive folder plus a CSV. A separate grades collection sits outside the pipeline entirely: every pipeline service account is denied write access to it.</desc>
+
+  <defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5b6675"/>
+    </marker>
+    <marker id="arwLog" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a93a0"/>
+    </marker>
+    <style>
+      .bg    { fill:#fbfaf8 }
+      .box   { fill:#ffffff; stroke:#c9c3b8; stroke-width:1.4; rx:6 }
+      .boxg  { fill:#f3f1ec; stroke:#c9c3b8; stroke-width:1.4; rx:6 }
+      .gcp   { fill:#eef1f6; stroke:#9aa7bb; stroke-width:1.6; rx:6 }
+      .lbl   { font-size:13px; fill:#1f2328; font-weight:600 }
+      .sub   { font-size:11px; fill:#5b6675 }
+      .mono  { font-size:10.5px; fill:#5b6675; font-family:ui-monospace,SFMono-Regular,Menlo,monospace }
+      .edge  { stroke:#5b6675; stroke-width:1.6; fill:none; marker-end:url(#arw) }
+      .edgeL { stroke:#8a93a0; stroke-width:1.2; fill:none; stroke-dasharray:3 3; marker-end:url(#arwLog) }
+      .deny  { stroke:#7a7a7a; stroke-width:2; fill:none; stroke-dasharray:7 5 }
+      .title { font-size:19px; fill:#1f2328; font-weight:700 }
+      .cap   { font-size:11px; fill:#6b6b6b }
+      .sect  { font-size:10.5px; fill:#8a8a8a; font-family:ui-monospace,Menlo,monospace; letter-spacing:.09em }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1180" height="760"/>
+
+  <text class="title" x="40" y="42">Karani — evidence without verdicts</text>
+  <text class="cap" x="40" y="62">One append-only log drives every artifact. The one thing the pipeline cannot reach is a grade.</text>
+
+  <!-- ============ trigger ============ -->
+  <text class="sect" x="40" y="100">TRIGGER</text>
+  <rect class="gcp" x="40" y="110" width="150" height="52"/>
+  <text class="lbl" x="52" y="132">Cloud Scheduler</text>
+  <text class="mono" x="52" y="149">nightly 03:00</text>
+
+  <rect class="gcp" x="40" y="180" width="150" height="52"/>
+  <text class="lbl" x="52" y="202">GCS finalize</text>
+  <text class="mono" x="52" y="219">debounced</text>
+
+  <!-- ============ dispatcher ============ -->
+  <rect class="gcp" x="240" y="128" width="176" height="76"/>
+  <text class="lbl" x="252" y="150">Cloud Run Job</text>
+  <text class="mono" x="252" y="167">karani-run</text>
+  <text class="sub" x="252" y="185">dispatcher: fan-out,</text>
+  <text class="sub" x="252" y="198">join, T_max</text>
+
+  <path class="edge" d="M190 136 L 236 152"/>
+  <path class="edge" d="M190 206 L 236 186"/>
+
+  <!-- ============ per-submission pipeline ============ -->
+  <text class="sect" x="466" y="100">PER SUBMISSION  ·  ONE TASK EACH</text>
+  <rect class="boxg" x="466" y="110" width="640" height="126" rx="8"/>
+
+  <rect class="box" x="482" y="128" width="112" height="46"/>
+  <text class="lbl" x="492" y="148">ingest</text>
+  <text class="mono" x="492" y="164">local source</text>
+
+  <rect class="box" x="610" y="128" width="126" height="46"/>
+  <text class="lbl" x="620" y="148">rendition freeze</text>
+  <text class="mono" x="620" y="164">sha256 · spans</text>
+
+  <rect class="box" x="752" y="128" width="112" height="46"/>
+  <text class="lbl" x="762" y="148">Gemma triage</text>
+  <text class="mono" x="762" y="164">bonus tier</text>
+
+  <rect class="box" x="880" y="128" width="210" height="46"/>
+  <text class="lbl" x="890" y="148">injection scan · proceeds</text>
+  <text class="mono" x="890" y="164">post-extraction bytes</text>
+
+  <path class="edge" d="M594 151 L 606 151"/>
+  <path class="edge" d="M736 151 L 748 151"/>
+  <path class="edge" d="M864 151 L 876 151"/>
+  <path class="edge" d="M416 160 L 462 155"/>
+
+  <rect class="box" x="482" y="186" width="278" height="40"/>
+  <text class="lbl" x="492" y="204">analyst workers · gemini-3.6-flash</text>
+  <text class="mono" x="492" y="219">one call per submission · temp 0</text>
+
+  <rect class="box" x="776" y="186" width="314" height="40"/>
+  <text class="lbl" x="786" y="204">citation validator</text>
+  <text class="mono" x="786" y="219">membership → quote → position → entailment</text>
+
+  <path class="edge" d="M760 206 L 772 206"/>
+  <path class="edge" d="M560 178 L 560 182"/>
+
+  <!-- ============ event log ============ -->
+  <text class="sect" x="40" y="296">THE ONLY SOURCE OF TRUTH</text>
+  <rect class="gcp" x="40" y="306" width="1050" height="80"/>
+  <text class="lbl" x="56" y="328">Firestore — append-only event log</text>
+  <text class="mono" x="56" y="346">runs/{runId}/events/{eventId}</text>
+  <text class="mono" x="56" y="361">id = f(runId, step, itemId, attempt) · create() only</text>
+  <text class="mono" x="56" y="376">custom IAM role: create + get. No update. No delete.</text>
+  <text class="mono" x="470" y="346">17 event types</text>
+  <text class="mono" x="470" y="361">a collision with differing content</text>
+  <text class="mono" x="470" y="376">raises EventIdCollision — never dedupes</text>
+  <text class="mono" x="800" y="346">the frozen rendition travels in its</text>
+  <text class="mono" x="800" y="361">event, so the docket's viewer renders</text>
+  <text class="mono" x="800" y="376">from the log alone</text>
+
+  <path class="edgeL" d="M538 230 L 538 302"/>
+  <path class="edgeL" d="M933 230 L 933 302"/>
+  <path class="edgeL" d="M300 208 L 300 302"/>
+
+  <!-- ============ six outcomes ============ -->
+  <text class="sect" x="40" y="410">SIX TERMINAL OUTCOMES · ONE UNATTENDED RUN</text>
+  <g font-size="11">
+    <rect class="box" x="40" y="420" width="164" height="34"/><text class="sub" x="50" y="441">accepted, first attempt</text>
+    <rect class="box" x="216" y="420" width="164" height="34"/><text class="sub" x="226" y="441">accepted after retry ≤2</text>
+    <rect class="box" x="392" y="420" width="164" height="34"/><text class="sub" x="402" y="441">no_evidence · never retried</text>
+    <rect class="box" x="568" y="420" width="164" height="34"/><text class="sub" x="578" y="441">NEEDS_HUMAN</text>
+    <rect class="box" x="744" y="420" width="164" height="34"/><text class="sub" x="754" y="441">injection flagged</text>
+    <rect class="box" x="920" y="420" width="170" height="34"/><text class="sub" x="930" y="441">TaskAbandoned · excluded[]</text>
+  </g>
+
+  <!-- ============ render ============ -->
+  <text class="sect" x="40" y="494">SOLE WRITER OF ARTIFACTS</text>
+  <rect class="box" x="40" y="510" width="300" height="76"/>
+  <text class="lbl" x="54" y="532">render(runId)</text>
+  <text class="mono" x="54" y="549">a pure fold over the event stream</text>
+  <text class="mono" x="54" y="564">no store · no clock · no network</text>
+  <text class="mono" x="54" y="579">shuffled log → byte-identical output</text>
+
+  <path class="edge" d="M300 460 L 252 506"/>
+
+  <rect class="box" x="380" y="510" width="200" height="76"/>
+  <text class="lbl" x="394" y="532">evidence sheets</text>
+  <text class="lbl" x="394" y="550">class overview</text>
+  <text class="mono" x="394" y="567">counted, never generated</text>
+  <text class="mono" x="394" y="580">no ordinal signal anywhere</text>
+  <path class="edge" d="M340 548 L 376 548"/>
+
+  <!-- ============ outputs ============ -->
+  <rect class="gcp" x="620" y="496" width="220" height="52"/>
+  <text class="lbl" x="632" y="518">Cloud Run service</text>
+  <text class="mono" x="632" y="535">karani-docket · click-to-locus</text>
+
+  <rect class="gcp" x="620" y="562" width="220" height="52"/>
+  <text class="lbl" x="632" y="584">delivery</text>
+  <text class="mono" x="632" y="601">one Drive folder · CSV export</text>
+
+  <path class="edge" d="M580 536 L 616 522"/>
+  <path class="edge" d="M580 560 L 616 588"/>
+
+  <!-- ============ grades: the negative space ============ -->
+  <text class="sect" x="880" y="486">THE NEGATIVE SPACE</text>
+  <rect x="880" y="490" width="210" height="132" rx="6" fill="#ffffff" stroke="#7a7a7a" stroke-width="2" stroke-dasharray="7 5"/>
+  <text class="lbl" x="894" y="514">grades/</text>
+  <text class="mono" x="894" y="533">instructor session only</text>
+  <text class="mono" x="894" y="548">history/ is create-only</text>
+  <text class="mono" x="894" y="570">every pipeline SA is</text>
+  <text class="mono" x="894" y="585">DENIED — asserted on the</text>
+  <text class="mono" x="894" y="600">deployed path, not just</text>
+  <text class="mono" x="894" y="615">in the emulator</text>
+
+  <!-- the denial: the pipeline cannot reach grades -->
+  <g stroke="#7a7a7a" stroke-width="2.6">
+    <line x1="846" y1="512" x2="866" y2="532"/>
+    <line x1="866" y1="512" x2="846" y2="532"/>
+  </g>
+  <path class="deny" d="M840 522 L 876 522"/>
+
+  <!-- the CSV's grade column reads FROM grades, and only the instructor writes them -->
+  <path d="M985 618 L 985 642 L 730 642 L 730 618" stroke="#5b6675" stroke-width="1.4" fill="none" stroke-dasharray="4 3" marker-end="url(#arw)"/>
+  <text class="mono" x="40" y="660">the CSV's grade column reads exclusively from grades/ — the pipeline contributes no verdict-bearing field to any delivered artifact</text>
+
+  <!-- ============ footer ============ -->
+  <line x1="40" y1="690" x2="1140" y2="690" stroke="#ddd8cf" stroke-width="1"/>
+  <text class="cap" x="40" y="710">Mandatory stack — Gemini: gemini-3.6-flash (analysis), gemini-3.5-flash-lite (entailment, lint assist), via Vertex AI.</text>
+  <text class="cap" x="40" y="727">Agent framework: Google ADK (dispatcher · analyst · validator · anomaly triage) with the GenAI SDK for model access.</text>
+  <text class="cap" x="40" y="744">Infrastructure: Cloud Run Job + Cloud Run service + Firestore + Cloud Scheduler.  Every number in this diagram traces to docs/metrics.json.</text>
+</svg>

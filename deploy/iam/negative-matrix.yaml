@@ -1,0 +1,99 @@
+# The negative-test matrix (KAR-313).
+#
+# Every row is an operation a service account MUST be denied. `tests/test_iam_boundary.py`
+# reads this file and attempts each one against the deployed project, asserting
+# PERMISSION_DENIED. A row that passes is a failure.
+#
+# The acceptance criterion is deliberately "identities are actually denied", not "the identity
+# is documented as not needing this". Those are different claims, and only one of them can be
+# checked. A documentation diff proves that someone wrote down an intention.
+#
+# Standing rule from AGENTS.md: never widen a scope to unblock a deploy. A failing deploy with
+# correct permissions beats a passing deploy with wrong ones.
+
+service_accounts:
+  - id: karani-ingest
+    purpose: Read the submission source. Nothing else.
+    granted:
+      - roles/storage.objectViewer  # on the ingest bucket only
+    denied:
+      - operation: firestore.write_event
+        why: ingest hands off through the dispatcher; it never writes the log itself
+      - operation: firestore.write_grade
+        why: no pipeline identity writes grades, ever
+      - operation: vertex.generate_content
+        why: ingest does not call models; extraction is deterministic
+      - operation: drive.files_create
+        why: ingest has no output side
+
+  - id: karani-analysis
+    purpose: Call Vertex AI and append events.
+    granted:
+      - roles/aiplatform.user
+      - projects/PROJECT/roles/karaniAppendOnly
+    denied:
+      - operation: firestore.update_event
+        why: >
+          THE append-only assertion. This identity writes the log and must be unable to
+          rewrite it. Asserted on the deployed path, not only in the emulator, because the
+          emulator does not evaluate IAM at all.
+      - operation: firestore.delete_event
+        why: same
+      - operation: firestore.write_grade
+        why: >
+          KAR-312. This is the denial filmed for the video. The analysis identity is the one
+          a viewer would most expect to be able to grade, which is why it is the one shown
+          being refused.
+      - operation: storage.write_object
+        why: analysis produces events, not files
+      - operation: drive.files_create
+        why: analysis has no output side
+
+  - id: karani-render
+    purpose: Read events, write artifacts.
+    granted:
+      - projects/PROJECT/roles/karaniAppendOnly
+      - roles/storage.objectCreator  # artifacts bucket only
+    denied:
+      - operation: vertex.generate_content
+        why: >
+          render() is a pure fold. An identity that could call a model is an identity that
+          could generate an artifact instead of deriving one, and the replay test's byte
+          stability would stop meaning anything.
+      - operation: firestore.write_grade
+        why: no pipeline identity writes grades
+      - operation: firestore.update_event
+        why: render consumes the log; it does not correct it
+
+  - id: karani-delivery
+    purpose: Write one Drive folder.
+    granted:
+      - drive.file  # OAuth scope, restricted to files this application created
+    denied:
+      - operation: drive.list_all_files
+        why: >
+          The scope is drive.file, not drive. This identity touches the instructor's real
+          Drive, so it must be unable to see anything in it that Karani did not put there.
+      - operation: firestore.write_grade
+        why: >
+          delivery exports the CSV whose grade column reads from grades/; it must not be able
+          to write the column it reads
+      - operation: firestore.write_event
+        why: ArtifactDelivered is written by the dispatcher, not by the delivery identity
+      - operation: vertex.generate_content
+        why: delivery formats artifacts; it generates nothing
+
+  - id: karani-docket
+    purpose: Serve the docket.
+    granted:
+      - projects/PROJECT/roles/karaniAppendOnly
+    denied:
+      - operation: firestore.write_grade
+        why: >
+          the docket is where an instructor ratifies feedback, and the ratification write goes
+          through the instructor's own authenticated session -- never through the service
+          account the container runs as
+      - operation: firestore.update_event
+        why: an instructor edit is a new event, never a mutation of an old one
+      - operation: vertex.generate_content
+        why: the docket renders; it does not draft

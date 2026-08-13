@@ -1,0 +1,82 @@
+rules_version = '2';
+
+// Firestore rules cover the BROWSER path only.
+//
+// Stating that plainly matters, because rules are frequently mistaken for the whole story.
+// A service account using the server SDK does not evaluate these rules at all — it is
+// authorised by IAM. So the append-only guarantee and the grades boundary are each enforced
+// twice, by two different mechanisms, because each mechanism covers a path the other does not:
+//
+//   browser / client SDK  ->  these rules
+//   service account       ->  the custom IAM role in deploy/iam/karani-append-only.yaml
+//
+// KAR-102 and KAR-312 assert both. An emulator test proves the client surface; a deployed
+// integration test proves the service-account surface receives PERMISSION_DENIED. Either one
+// alone would leave a door open while looking complete.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------------------
+    // The event log. Append-only, and that means create-only.
+    // ---------------------------------------------------------------------------------
+    match /runs/{runId} {
+      allow read: if true;
+      allow write: if false;
+
+      match /events/{eventId} {
+        allow read: if true;
+        // Create is permitted; update and delete are not, ever, by anyone on this path.
+        // Deterministic event IDs mean a duplicate create fails on ALREADY_EXISTS, which the
+        // application turns into either a self-dedupe (identical content) or an
+        // EventIdCollision (differing content). Neither is a silent overwrite.
+        allow create: if true;
+        allow update, delete: if false;
+      }
+
+      // Rendered artifacts are written by render() through a service account, never here.
+      match /artifacts/{artifactId} {
+        allow read: if true;
+        allow write: if false;
+      }
+
+      match /claims/{claimId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------------------------
+    // Grades. The negative space this whole system is arranged around.
+    // ---------------------------------------------------------------------------------
+    //
+    // Writable only by an authenticated human session. No pipeline identity can reach this
+    // collection on any path: not the analyst, not the validator, not render, not delivery.
+    //
+    // The condition is `request.auth.token.firebase.sign_in_provider != 'custom'` rather than
+    // simply `request.auth != null` because a service account authenticating with a custom
+    // token would satisfy the weaker check. The instructor signs in as a person.
+    match /grades/{gradeId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+                            && request.auth.token.firebase.sign_in_provider != 'custom'
+                            && request.resource.data.actor == request.auth.uid;
+      allow delete: if false;
+
+      // History is create-only. A grade can be changed; the record that it was changed
+      // cannot be removed. An instructor revising a grade is ordinary and expected; an
+      // instructor's revision history disappearing is not.
+      match /history/{entryId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+                      && request.auth.token.firebase.sign_in_provider != 'custom';
+        allow update, delete: if false;
+      }
+    }
+
+    // Default deny. Anything not named above is unreachable rather than accidentally open.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
