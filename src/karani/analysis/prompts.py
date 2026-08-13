@@ -51,6 +51,10 @@ ABSOLUTE CONSTRAINTS
    it in the conclusion."
    Not:   "Has a strong, well-developed thesis."
 
+   Never write a span ID (sp-NNNN) inside the observation text. Span IDs belong in the
+   citation field. An instructor reads the text; "the transition from sp-0000" is scaffolding
+   leaking into prose, and it makes the sentence impossible to verify against the document.
+
 2. You may cite ONLY span IDs that literally appear in the submission text below, in the form
    [[sp-NNNN]]. Never invent a span ID. If the evidence you want is not in a span you can
    name, that is a no_evidence finding.
@@ -135,26 +139,57 @@ Each paragraph is preceded by its span ID. You may cite only these IDs.
 """
 
 
+# Revised once, deliberately, under KAR-310's pre-committed protocol. The measured
+# disagreement rate on a live 16-submission run was 13.5% (10 of 74), above the 8% bar, which
+# entitled exactly one revision cycle. What the measurement showed was not a model-quality
+# problem but a scoping error in this prompt:
+#
+#   claim:  "States a position in the second paragraph and returns to it in the conclusion."
+#   reason: "The passage consists of only a single paragraph, so it cannot contain a
+#            concluding paragraph."
+#
+# Seven of the ten disagreements had that exact shape. The checker was correct about what it
+# was shown, and the analyst was correct about the document. Rubric criteria like organization
+# and thesis-governance are *inherently document-level*: no single paragraph can entail
+# "returns to this in the conclusion", so scoping entailment to the cited span alone made
+# those criteria unfalsifiable-by-construction and guaranteed a disagreement every time.
+#
+# The revision gives the checker the whole submission and names the cited span as the locus,
+# which is what a human verifying a citation actually does: read the claim, look at the cited
+# line, and check it against the document. The quote's *presence and position* remain checked
+# deterministically by layers 1-3; this layer only ever judged support.
 ENTAILMENT_SYSTEM = """\
-You check whether a quoted passage supports a factual claim about it. You answer one question
+You check whether a submission supports a factual claim made about it. You answer one question
 and nothing else.
 
-You will be given a CLAIM describing what a passage does, and the PASSAGE itself.
+You will be given a CLAIM describing what the submission does, the CITED PASSAGE the claim
+points at, and the FULL SUBMISSION the passage came from.
 
-Answer: does the passage support the claim?
+Answer: does the submission support the claim, with the cited passage as the relevant location?
 
-Judge only what the passage actually contains. Do not consider whether the claim is a fair
-assessment, whether the writing is good, or what the rest of the document might say. If the
-claim describes something the passage does not do, the answer is no -- even if the claim is
-reasonable about the document as a whole.
+How to judge:
+- Claims about a specific sentence or phrase are checked against the CITED PASSAGE.
+- Claims about the document's structure -- a thesis returned to later, transitions between
+  paragraphs, a counterargument answered further on -- are checked against the FULL
+  SUBMISSION. Do not answer "unsupported" merely because the cited passage alone does not
+  contain the whole pattern; that is expected for structural claims.
+- Do answer "unsupported" when the submission genuinely does not do what the claim says: a
+  counterargument that is raised and never answered, a transition asserted but absent, a
+  feature claimed that is not there.
+
+Judge only what the text contains. Never consider whether the work is good, whether the claim
+is generous or harsh, or what grade anything deserves. You are checking correspondence between
+a description and a text, nothing else.
 
 Return exactly one JSON object, no prose, no fence:
 {"supported": true, "reason": "<one sentence>"}
 """
 
 
-def build_entailment_prompt(claim: str, passage: str) -> str:
-    return f"CLAIM\n{claim}\n\nPASSAGE\n{passage}\n"
+def build_entailment_prompt(claim: str, passage: str, submission: str = "") -> str:
+    if not submission:
+        return f"CLAIM\n{claim}\n\nCITED PASSAGE\n{passage}\n"
+    return f"CLAIM\n{claim}\n\nCITED PASSAGE\n{passage}\n\nFULL SUBMISSION\n{submission}\n"
 
 
 def prompt_fingerprint(criteria: list[Criterion]) -> str:

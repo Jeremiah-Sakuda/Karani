@@ -18,8 +18,8 @@
     "per_run_15_measured": {
       "value": "not yet measured",
       "unit": "USD",
-      "method": null,
-      "measured_at": null,
+      "method": "21 live calls executed; the dollar figure must be read from the Cloud Billing console rather than estimated from token counts, and has not been read yet",
+      "measured_at": "2026-08-13T18:13:01.275834+00:00",
       "surface": null
     },
     "scale_run_150_measured": {
@@ -31,40 +31,66 @@
     }
   },
   "validation": {
+    "_note": "Measured on a live 16-submission Vertex AI run (run-recorded-p2, gemini-3.6-flash + gemini-3.5-flash-lite, temperature 0).",
+    "observations_total": {
+      "value": 75,
+      "unit": "count",
+      "method": "claims projection of the live run",
+      "measured_at": "2026-08-13T18:13:01.275834+00:00",
+      "surface": "local"
+    },
     "first_attempt_acceptance_rate": {
-      "value": "not yet measured",
+      "value": 0.9054,
       "unit": "fraction",
-      "method": null,
-      "measured_at": null,
-      "surface": null
+      "method": "accepted evidence observations needing no retry, over all evidence observations",
+      "measured_at": "2026-08-13T18:13:01.275834+00:00",
+      "surface": "local"
     },
     "entailment_disagreement_rate": {
-      "value": "not yet measured",
+      "value": 0.0676,
       "unit": "fraction",
-      "method": null,
-      "measured_at": null,
-      "surface": null
+      "method": "entailment disagreements over cited observations, live run, after the KAR-310 revision cycle",
+      "measured_at": "2026-08-13T18:13:01.275834+00:00",
+      "surface": "local"
+    },
+    "entailment_disagreement_rate_before_revision": {
+      "value": 0.1351,
+      "unit": "fraction",
+      "method": "same measurement on prompt_version p1, before the one permitted revision cycle",
+      "measured_at": "2026-08-13T18:13:01.275834+00:00",
+      "surface": "local"
     },
     "entailment_branch_taken": {
-      "value": "not yet measured",
-      "unit": "enum: accept | one_revision_cycle | accept_and_report",
-      "method": "pre-committed in KAR-310 before measurement, to keep the response from being chosen after seeing the number",
-      "measured_at": null,
-      "surface": null
+      "value": "one_revision_cycle_then_accept",
+      "unit": "enum",
+      "method": "p1 measured 13.5% (>8%), which entitled exactly one prompt-revision cycle under KAR-310; p2 measured 6.8%, at or below the 8% bar, so the accept branch applies",
+      "measured_at": "2026-08-13T18:13:01.275834+00:00",
+      "surface": "local"
     },
     "retry_distribution": {
-      "value": "not yet measured",
-      "unit": "histogram over attempts",
-      "method": null,
-      "measured_at": null,
-      "surface": null
+      "value": {
+        "1": 67,
+        "2": 7,
+        "cap_reached": 1
+      },
+      "unit": "histogram",
+      "method": "attempts recorded on each accepted observation, plus attempt-cap escalations",
+      "measured_at": "2026-08-13T18:13:01.275834+00:00",
+      "surface": "local"
     },
-    "cache_hit_rate": {
-      "value": "not yet measured",
+    "cache_hit_rate_warm": {
+      "value": 1.0,
       "unit": "fraction",
-      "method": null,
-      "measured_at": null,
-      "surface": null
+      "method": "second offline run over the same fixtures: 21 of 21 model calls served from the committed cache",
+      "measured_at": "2026-08-13T18:13:01.275834+00:00",
+      "surface": "local"
+    },
+    "model_calls_cold": {
+      "value": 21,
+      "unit": "count",
+      "method": "live run with an empty cache, 16 submissions",
+      "measured_at": "2026-08-13T18:13:01.275834+00:00",
+      "surface": "local"
     }
   },
   "scale_run": {

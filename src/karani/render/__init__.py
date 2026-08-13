@@ -229,7 +229,13 @@ def render(run_id: str, events: list[Event]) -> RenderedRun:
             # asked to look at it -- that is what escalation means. Promoted out of `drafted`
             # if that is where it is, so the human sees the claim under review rather than an
             # anomaly item pointing at nothing.
-            source = current.get(oid) or drafted.get(oid)
+            # Prefer the observation carried on the escalation event: it is the VERIFIED
+            # one, recording which layers passed before entailment disagreed. Falling back to
+            # the draft loses that and renders the escalation as though nothing was checked.
+            carried = p.get("observation")
+            source = (
+                carried if isinstance(carried, dict) else (current.get(oid) or drafted.get(oid))
+            )
             if source is not None:
                 current[oid] = {
                     **source,

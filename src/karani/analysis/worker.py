@@ -332,6 +332,7 @@ def analyze_submission(
             entail = check_entailment(
                 claim=obs.text,
                 passage=span.text_from(rendition.text),
+                submission=rendition.text,
                 client=client,
                 cache=cache,
                 rendition_id=rendition.rendition_id,
@@ -367,6 +368,16 @@ def analyze_submission(
                             "observation_id": obs.observation_id,
                             "anomaly_kind": "entailment_disagreement",
                             "reason": entail.reason,
+                            # The VERIFIED observation, not just its ID.
+                            #
+                            # Without it the fold promotes the raw draft and the escalated
+                            # observation renders with every verification field null -- which
+                            # reads as "nothing was checked" when in fact three layers passed
+                            # and only entailment failed. That is exactly the information the
+                            # instructor needs in order to judge the escalation: this citation
+                            # is real, quoted correctly, and in the right place, and the
+                            # disagreement is about what the passage means.
+                            "observation": escalated.model_dump(mode="json"),
                         },
                     )
                 )

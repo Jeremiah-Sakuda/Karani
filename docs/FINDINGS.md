@@ -196,3 +196,77 @@ of something that is not an essay — remain the triage tier's job (KAR-315).
 **What made it findable:** the end-to-end test asserted `len(dispatched) == 16` against a hand
 counted expectation. An assertion that had said "every dispatched unit reaches a terminal
 state" alone would have passed — MANIFEST reached one.
+
+### 2026-08-13 — The entailment disagreement rate, and the pre-committed branch we took
+
+**First live run, 16 submissions, `gemini-3.6-flash` + `gemini-3.5-flash-lite` on Vertex AI at
+temperature 0.** This is the measurement KAR-310 required be taken before anything was tuned,
+with the response to it pre-committed *before* the number existed: ≤8% accept; >8% buys
+exactly one prompt-revision cycle; still >8% means accept, report, and use "validator"
+language everywhere.
+
+**Measured on prompt_version p1: 10 disagreements over 74 cited observations = 13.5%.**
+Above the bar. One revision cycle, and one only.
+
+**What the number turned out to mean.** Seven of the ten disagreements were the same shape:
+
+> **claim:** "States a position in the second paragraph and returns to it in the conclusion."
+> **reason:** "The passage consists of only a single paragraph, so it cannot contain a
+> concluding paragraph."
+
+The checker was correct about what it had been shown. The analyst was correct about the
+document. **The check was scoped wrong.** Entailment was being handed only the cited span,
+and several rubric criteria — organization and coherence, thesis governance, engagement with
+counterarguments — are *inherently document-level*. No single paragraph can entail "returns to
+this in the conclusion". Those criteria were unfalsifiable by construction: they escalated
+every time, and the anomaly queue filled with the system disagreeing with itself.
+
+That is a much better problem than "the model is unreliable", and it is only visible because
+the rate was measured before anything was tuned. Tuning first would have produced a lower
+number and left the scoping error in place.
+
+**The revision (the one permitted cycle).** The entailment checker now receives the cited
+passage *and* the full submission, and is told which kinds of claim to check against which:
+sentence-level claims against the passage, structural claims against the document, and to
+answer "unsupported" only when the submission genuinely does not do what the claim says. The
+quote's presence and position remain checked deterministically by layers 1–3; this layer only
+ever judged support. Separately, the analyst is now told never to write span IDs into
+observation prose — two claims had leaked `sp-0002` into text an instructor reads, which also
+made them unverifiable against the document.
+
+**Measured on prompt_version p2: 5 disagreements over 74 = 6.8%.** At or below the bar, so the
+accept branch applies. No further tuning is permitted and none was done.
+
+**The survivors are the layer working.** The five remaining escalations are genuine catches,
+not noise:
+
+- *"The submission cites both Grimaldi and Oyelaran with parenthetical page numbers, but
+  Oyelaran supports arguments regarding urban density cost structures rather than
+  administrative staffing."* — a real mischaracterisation of a source.
+- *"The claim mentions sources such as Aberdene and Castellanos, but Castellanos is not
+  present in the cited passage."* — a real precision failure in the citation.
+- *"While the submission states the position in the opening section, it does not return to
+  this claim in the conclusion."* — arguable, which is exactly why it goes to a human rather
+  than being resolved by the system.
+
+**Everything else measured on the same run:**
+
+| | |
+|---|---|
+| observations | 75 across 15 submissions |
+| first-attempt acceptance | 67 / 74 = **90.5%** |
+| accepted after bounded retry | 7 |
+| attempt cap reached → `NEEDS_HUMAN` | 1 |
+| `no_evidence` | 1 (s12 c4, exactly as planted) |
+| injection detected, analysis proceeded | 1 (s07, exactly as planted) |
+| unparseable → `TaskFailed` | 1 (s16, exactly as planted) |
+| model calls, cold cache | 21 |
+| warm-cache hit rate | 21 / 21 = **100%** |
+
+Every planted fixture behaved as its manifest entry predicted, on a live run, with no
+special-casing anywhere in the pipeline.
+
+**Still not measured:** the dollar cost. 21 live calls executed, but the figure has to be read
+from the Cloud Billing console rather than derived from token counts — `gemini-3.6-flash` bills
+thinking tokens (222 on a 32-token prompt in one smoke test), so a token-arithmetic estimate
+would understate it. It stays "not yet measured" until someone reads the console.

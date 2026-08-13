@@ -43,7 +43,7 @@ TEMPERATURE: Final[float] = 0.0
 
 # Bumping this invalidates the response cache and is the only variable in KAR-403's
 # exemplar-loop acceptance test. Treat it as part of the model identity.
-PROMPT_VERSION: Final[str] = "p1"
+PROMPT_VERSION: Final[str] = "p2"
 
 # ---------------------------------------------------------------------------------------
 # Citation geometry (KAR-104)

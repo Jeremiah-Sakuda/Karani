@@ -45,6 +45,7 @@ def check_entailment(
     *,
     claim: str,
     passage: str,
+    submission: str = "",
     client: ModelClient,
     cache: ResponseCache,
     rendition_id: str,
@@ -61,13 +62,13 @@ def check_entailment(
         model_id=MODEL_VERIFY,
         temperature=TEMPERATURE,
         attempt=0,
-        feedback_hash=sha256_text(f"{claim}␟{passage}")[:32],
+        feedback_hash=sha256_text(f"{claim}␟{passage}␟{submission}")[:32],
         criterion_scope="entailment",
     )
 
     response = client.generate(
         system=ENTAILMENT_SYSTEM,
-        prompt=build_entailment_prompt(claim, passage),
+        prompt=build_entailment_prompt(claim, passage, submission),
         model_id=MODEL_VERIFY,
         key=key,
     )

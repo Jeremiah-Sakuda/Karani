@@ -11,11 +11,11 @@ Everything not on this list is done and committed.
 
 ### 1. Enable billing on the deploy project
 
-Nothing has been deployed and no model call has ever run, because `asili-61171` has billing
+Nothing has been deployed and no model call has ever run, because `asili-xprize-2026` has billing
 disabled. You have an open **Deployment Billing** account already powering `hodi-2026`.
 
 ```bash
-gcloud billing projects link asili-61171 --billing-account=015ACB-BA3DCD-D7BD7F
+gcloud billing projects link asili-xprize-2026 --billing-account=015ACB-BA3DCD-D7BD7F
 ```
 
 *Why not me:* linking a billing account is a financial account change.
@@ -26,7 +26,7 @@ The Vertex SDK needs ADC; a `gcloud` login is not the same thing.
 
 ```bash
 gcloud auth application-default login
-gcloud config set project asili-61171
+gcloud config set project asili-xprize-2026
 ```
 
 *Why not me:* it is a browser OAuth flow.
@@ -39,8 +39,8 @@ show seven nights of history on the 24th, and no amount of later effort recovers
 body does not have to be real yet.
 
 ```bash
-./scripts/bootstrap_gcp.sh asili-61171
-./scripts/deploy.sh asili-61171 --scheduler-only
+./scripts/bootstrap_gcp.sh asili-xprize-2026
+./scripts/deploy.sh asili-xprize-2026 --scheduler-only
 ```
 
 *Why not me:* depends on items 1 and 2.
@@ -84,7 +84,7 @@ substitutes for the other, and skipping this leaves `grades/` writable from a br
 
 ```bash
 npm i -g firebase-tools && firebase login
-firebase deploy --only firestore:rules --project asili-61171
+firebase deploy --only firestore:rules --project asili-xprize-2026
 ```
 
 *Why not me:* `firebase login` is a browser OAuth flow.
@@ -124,7 +124,7 @@ substitute it silently.**
 ### 9. Deploy for real, then run once at scale
 
 ```bash
-./scripts/deploy.sh asili-61171
+./scripts/deploy.sh asili-xprize-2026
 gcloud run jobs execute karani-run --region=us-central1
 make scale && KARANI_MODEL_BACKEND=vertex .venv/bin/python -m karani.cli run --source fixtures/scale --live
 ```
@@ -144,7 +144,7 @@ The Devpost copy uses explicit `[MEASURED: …]` placeholders. Replace each from
 ### 11. Run the deployed-path negative tests
 
 ```bash
-GOOGLE_CLOUD_PROJECT=asili-61171 .venv/bin/pytest -m deployed -v
+GOOGLE_CLOUD_PROJECT=asili-xprize-2026 .venv/bin/pytest -m deployed -v
 ```
 
 This is what licenses the phrase *"structurally impossible."* Until it passes, the language

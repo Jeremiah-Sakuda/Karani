@@ -73,7 +73,12 @@ class VertexClient:
             # contest requires the model be reached through one of those two surfaces, and
             # Karani only supports this one -- so the requirement is satisfied by the code
             # path, not by a configuration flag an operator might have set differently.
-            self._client = genai.Client(vertexai=True, project=self.project, location=self.location)
+            self._client = genai.Client(
+                vertexai=True,
+                project=self.project,
+                location=self.location,
+                credentials=_resolve_credentials(),
+            )
         return self._client
 
     def generate(self, *, system: str, prompt: str, model_id: str, key: CacheKey) -> ModelResponse:
@@ -114,6 +119,57 @@ class VertexClient:
             input_tokens=getattr(usage, "prompt_token_count", 0) or 0,
             output_tokens=getattr(usage, "candidates_token_count", 0) or 0,
         )
+
+
+def _resolve_credentials() -> Any:
+    """Application default credentials, or the gcloud CLI's own token as a local fallback.
+
+    On Cloud Run, ADC comes from the metadata server, `google.auth.default()` succeeds, and
+    this returns `None` so the SDK resolves credentials itself. The deployed path is unchanged.
+
+    Locally, `gcloud auth login` and `gcloud auth application-default login` are different
+    things — the first authenticates the CLI, the second writes the ADC file the SDKs read.
+    Having done only the first is the common state and produces a genuinely confusing failure:
+    every `gcloud` command works and every SDK call fails. So when ADC is absent, Karani
+    borrows the CLI's access token.
+
+    It is the **same identity** either way, obtained differently. Nothing is escalated, and no
+    credential is written to disk. The token is short-lived — about an hour — which is why this
+    is a developer convenience for recording the cache and running a bench, not the mechanism
+    the deployed path relies on.
+    """
+    import subprocess
+
+    try:
+        import google.auth
+
+        google.auth.default()
+        return None  # ADC present; let the SDK do its normal resolution.
+    except Exception:  # noqa: BLE001 - absent ADC is an ordinary local state, not an error
+        pass
+
+    try:
+        token = subprocess.run(
+            ["gcloud", "auth", "print-access-token"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        ).stdout.strip()
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError(
+            "no Google credentials available.\n"
+            "  Either:  gcloud auth application-default login\n"
+            "  Or:      gcloud auth login   (Karani will borrow the CLI's token)\n"
+            f"  (gcloud token lookup failed: {type(exc).__name__})"
+        ) from exc
+
+    if not token:
+        raise RuntimeError("gcloud returned an empty access token; run `gcloud auth login`")
+
+    from google.oauth2.credentials import Credentials
+
+    return Credentials(token=token)
 
 
 def open_client(
