@@ -86,6 +86,7 @@ def run_pipeline(
     scanner: Scanner,
     max_workers: int = 8,
     t_max_seconds: int = T_MAX_SECONDS,
+    project: str = "",
 ) -> RunSummary:
     started = time.monotonic()
     ts = datetime.now(UTC)
@@ -114,6 +115,7 @@ def run_pipeline(
                 client=client,
                 cache=cache,
                 scanner=scanner,
+                project=project,
             ): ref
             for ref in refs
         }
@@ -224,7 +226,7 @@ def run_pipeline(
     return summary
 
 
-def _run_one(*, ref: SubmissionRef, run_id: str, criteria, client, cache, scanner):  # noqa: ANN001
+def _run_one(*, ref: SubmissionRef, run_id: str, criteria, client, cache, scanner, project=""):  # noqa: ANN001
     try:
         frozen = freeze(ref)
     except UnparseableSource as exc:
@@ -237,6 +239,7 @@ def _run_one(*, ref: SubmissionRef, run_id: str, criteria, client, cache, scanne
             client=client,
             cache=cache,
             scanner=scanner,
+            project=project,
         ),
         None,
     )

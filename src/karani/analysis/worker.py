@@ -46,6 +46,7 @@ from karani.config import MAX_ATTEMPTS, MODEL_ANALYSIS, PROMPT_VERSION, TEMPERAT
 from karani.ingest.freeze import FrozenSubmission
 from karani.schema.events import Event, Step
 from karani.schema.observation import Citation, Observation, Provenance, Verification
+from karani.triage.gemma import triage
 from karani.validate.citation import validate_citation
 from karani.validate.entailment import check_entailment
 
@@ -75,6 +76,7 @@ def analyze_submission(
     client: ModelClient,
     cache: ResponseCache,
     scanner: Scanner,
+    project: str = "",
     now: datetime | None = None,
 ) -> WorkerOutcome:
     ts = now or datetime.now(UTC)
@@ -114,6 +116,40 @@ def analyze_submission(
             },
         )
     )
+
+    # --- triage (KAR-315) --------------------------------------------------------------
+    # Gemma when it is available, deterministic heuristics under their own name when it is
+    # not. Which tier answered is recorded on the event rather than inferred from config, so
+    # the log cannot claim Gemma ran when the fallback did.
+    decision = triage(rendition.text, project=project)
+    outcome.events.append(
+        Event.build(
+            run_id=run_id, step=Step.TRIAGE_DECIDED, item_id=ref.student_id, ts=ts,
+            payload={
+                "student_id": ref.student_id,
+                "kind": decision.kind,
+                "text_tier": decision.text_tier,
+                "language": decision.language,
+                "reason": decision.reason,
+                "decided_by": decision.decided_by,
+                "gemma_available": decision.gemma_available,
+            },
+        )
+    )
+    if not decision.should_analyze:
+        # Course material rather than student work. Recorded as a routing decision, not as a
+        # failure -- nobody's submission went wrong here.
+        outcome.events.append(
+            Event.build(
+                run_id=run_id, step=Step.TASK_FAILED, item_id=ref.student_id, ts=ts,
+                payload={
+                    "student_id": ref.student_id, "stage": "triage",
+                    "reason": f"not a submission ({decision.reason}); "
+                              f"classified by {decision.decided_by}",
+                },
+            )
+        )
+        return outcome
 
     # --- injection scan on post-extraction bytes -------------------------------------
     # The scan target is exactly the rendition text the model is about to see. Scanning the
