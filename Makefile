@@ -4,7 +4,7 @@ PY ?= python3.12
 VENV := .venv
 BIN := $(VENV)/bin
 
-.PHONY: help venv demo demo-live demo-emulator docket-golden dev-run compliance test lint fmt scale clean
+.PHONY: help venv demo demo-live demo-emulator record-cache docket-golden dev-run compliance test lint fmt scale clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -23,6 +23,16 @@ demo: $(BIN)/python ## Full pipeline over committed fixtures. Zero credentials, 
 	KARANI_CACHE_BACKEND=file \
 	KARANI_MODEL_BACKEND=cache \
 	$(BIN)/python -m karani.cli run --source fixtures --offline --open-docket
+
+record-cache: $(BIN)/python ## Run live ONCE and record every model response into fixtures/cache/.
+	@echo "This makes real Vertex AI calls and costs money (roughly the price of one run)."
+	@echo "Afterwards, commit fixtures/cache/ so that 'make demo' works offline for everyone."
+	@echo ""
+	KARANI_STORE_BACKEND=local \
+	KARANI_MODEL_BACKEND=vertex \
+	$(BIN)/python -m karani.cli run --source fixtures --live --run-id run-golden
+	@echo ""
+	@echo "Now: git add fixtures/cache && git commit -m 'chore: record the offline demo cache'"
 
 demo-live: $(BIN)/python ## Same pipeline against real Vertex AI. Costs money. Requires credentials.
 	KARANI_STORE_BACKEND=$${KARANI_STORE_BACKEND:-local} \

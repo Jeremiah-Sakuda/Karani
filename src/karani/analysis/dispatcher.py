@@ -26,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from karani.analysis.cache import ResponseCache
+from karani.analysis.cache import MissingCacheEntry, ResponseCache
 from karani.analysis.client import ModelClient
 from karani.analysis.prompts import Criterion
 from karani.analysis.worker import analyze_submission
@@ -68,6 +68,7 @@ class RunSummary:
     wall_clock_seconds: float = 0.0
     aborted: bool = False
     abort_reason: str = ""
+    cache_missing: bool = False
 
     @property
     def cache_hit_rate(self) -> float | None:
@@ -141,6 +142,22 @@ def run_pipeline(
 
             try:
                 outcome, error = future.result()
+            except MissingCacheEntry as exc:
+                # NOT a submission failure, and it must never be recorded as one.
+                #
+                # A missing cache entry means the operator ran the offline path without a
+                # populated cache. Writing TaskFailed here would put "this student's work
+                # could not be processed" in the permanent log for a setup problem that has
+                # nothing to do with the student — and the docket would then show a
+                # parse-failure anomaly against a submission that is perfectly fine.
+                #
+                # It aborts the run instead, because the condition is identical for every
+                # remaining unit and grinding through fifteen of them produces fifteen
+                # identical misleading records.
+                summary.aborted = True
+                summary.abort_reason = "offline cache is missing entries"
+                summary.cache_missing = True
+                raise
             except Exception as exc:  # noqa: BLE001 - a worker crash must not stop the run
                 _write(store, Event.build(
                     run_id=run_id, step=Step.TASK_FAILED, item_id=ref.student_id,

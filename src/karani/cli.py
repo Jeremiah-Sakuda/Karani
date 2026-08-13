@@ -14,7 +14,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from karani.analysis.cache import ResponseCache
+from karani.analysis.cache import MissingCacheEntry, ResponseCache
 from karani.analysis.client import open_client
 from karani.analysis.prompts import Criterion
 from karani.armor.scan import open_scanner
@@ -64,16 +64,52 @@ def cmd_run(args: argparse.Namespace) -> int:
     print(f"store     {settings.store_backend}")
     print()
 
-    summary = run_pipeline(
-        run_id=run_id,
-        source=open_source("local", source_dir),
-        criteria=criteria,
-        store=store,
-        client=client,
-        cache=cache,
-        scanner=scanner,
-        max_workers=args.workers,
-    )
+    try:
+        summary = run_pipeline(
+            run_id=run_id,
+            source=open_source("local", source_dir),
+            criteria=criteria,
+            store=store,
+            client=client,
+            cache=cache,
+            scanner=scanner,
+            max_workers=args.workers,
+        )
+    except MissingCacheEntry as exc:
+        # The offline path never invents a model response, so an empty cache stops the run.
+        # What matters here is what the operator is told: this is a setup state, not a broken
+        # system and not a problem with anyone's submission. Then fall through to something
+        # that actually works, because a demo that prints a stack trace and exits is worse
+        # than no demo.
+        print("\n" + "─" * 78)
+        print("The offline cache has no recorded model responses for these submissions.")
+        print("─" * 78)
+        print(
+            "\nEverything up to the model boundary ran: submissions were discovered, frozen\n"
+            "into immutable renditions, span registries were minted, and the injection scan\n"
+            "completed. What is missing is the recorded output of a real model run.\n"
+            "\nKarani will not fabricate one. A stubbed response would make this demo a\n"
+            "different system from the one in the video, which is the one thing an offline\n"
+            "demo must never be.\n"
+        )
+        print("To record a real run once and make this path work offline forever:\n")
+        print("    gcloud auth application-default login")
+        print("    export GOOGLE_CLOUD_PROJECT=<your-project>")
+        print("    make record-cache      # runs live, writes fixtures/cache/, then commit it\n")
+        print("Meanwhile, the committed reference run will serve. Stated precisely, because")
+        print("it matters: its event log is hand-constructed, not the output of a model run.")
+        print("It exercises all six terminal outcomes and every rendering path, with no model")
+        print("and no cloud — but the observations in it were authored, not drafted:\n")
+        print("    make docket-golden\n")
+        print(f"(detail: {exc.args[0].splitlines()[0] if exc.args else exc})")
+        print("─" * 78 + "\n")
+
+        if args.open_docket:
+            from karani.docket.server import serve
+
+            golden = read_jsonl_log(settings.golden_log)
+            serve(render(golden[0].run_id if golden else "run-golden", golden), port=int(args.port))
+        return 3
 
     rendered = render(run_id, store.read_run(run_id))
     out_dir = REPO_ROOT / "out" / run_id

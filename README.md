@@ -7,6 +7,15 @@ make demo
 Zero credentials. Zero Java. Zero Docker. Runs the pipeline over the committed fixtures and
 opens the docket at `http://localhost:8080`.
 
+> **Current state, stated plainly.** `make demo` runs the whole deterministic pipeline —
+> discovery, rendition freeze, span registry, injection scan, validation, the fold, and the
+> docket. The one thing it cannot do yet is replay model output, because
+> **`fixtures/cache/` has not been recorded**: the Google Cloud project this deploys to does
+> not have billing enabled, so no model call has ever executed. Karani will not fabricate
+> one — a stubbed response would make the offline demo a different system from the one in
+> the video. Until the cache is recorded with `make record-cache`, `make demo` explains this
+> and serves the committed reference run instead. `make docket-golden` works fully today.
+
 ---
 
 > *"Clerks prepare the case. Judges decide it. Karani is only ever the clerk."*
