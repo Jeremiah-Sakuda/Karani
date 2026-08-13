@@ -1,15 +1,29 @@
 # What only you can do
 
-Ordered by urgency, not by phase. Items 1–3 are time-critical: **item 3 gets worse every day
-you wait and cannot be recovered by working harder later.**
-
-Everything not on this list is done and committed.
+**Updated 2026-08-13.** Four items that were on this list are now done: the deploy project has
+billing (`asili-xprize-2026`), the pinned model IDs are verified live, the offline demo cache
+is recorded and committed, and the KAR-310 entailment measurement has been taken and its
+pre-committed branch resolved. What remains is below.
 
 ---
 
-## Today — these three block everything downstream
+## Done — no longer your problem
 
-### 1. Enable billing on the deploy project
+| Was | Now |
+|---|---|
+| Enable billing | Switched to `asili-xprize-2026`, which already has it. `asili-61171` is untouched |
+| `gcloud auth application-default login` | Not needed. Karani falls back to the gcloud CLI's own token when ADC is absent — same identity, nothing stored |
+| Record the offline demo cache | **Done.** 187 responses from a real 16-submission run, committed. `make demo` runs the full pipeline offline, 21/21 calls from cache |
+| Confirm the pinned model IDs resolve | **Done.** `gemini-3.6-flash` and `gemini-3.5-flash-lite` both verified against live Vertex AI |
+| Measure the entailment disagreement rate | **Done.** 13.5% on p1 → one permitted revision cycle → 6.8% on p2. Accept branch. Recorded in FINDINGS and metrics.json |
+
+---
+
+## Still yours
+
+
+
+### ~~1. Enable billing~~ — done
 
 Nothing has been deployed and no model call has ever run, because `asili-xprize-2026` has billing
 disabled. You have an open **Deployment Billing** account already powering `hodi-2026`.
@@ -20,7 +34,7 @@ gcloud billing projects link asili-xprize-2026 --billing-account=015ACB-BA3DCD-D
 
 *Why not me:* linking a billing account is a financial account change.
 
-### 2. Grant application default credentials
+### ~~2. ADC~~ — not needed
 
 The Vertex SDK needs ADC; a `gcloud` login is not the same thing.
 
@@ -49,7 +63,7 @@ body does not have to be real yet.
 
 ## This week
 
-### 4. Record the offline demo cache — **this is what makes README line 1 work**
+### ~~4. Record the offline demo cache~~ — done
 
 Right now `make demo` cannot replay model output, because no model call has ever executed. It
 explains itself and falls back to the reference docket, but a judge running the first line of
@@ -63,7 +77,7 @@ git add fixtures/cache && git commit -m "chore: record the offline demo cache" &
 Cost: roughly one run — single-digit dollars. **Highest-value item on this list after the
 three above.**
 
-### 5. Confirm the pinned model IDs resolve
+### ~~5. Confirm the pinned model IDs~~ — done
 
 ```bash
 make venv && PYTHONPATH=src .venv/bin/python -m karani.cli preflight
