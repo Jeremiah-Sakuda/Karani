@@ -75,6 +75,20 @@ the finding in `docs/FINDINGS.md`. **Do not substitute a Gemini 3.1 model:** it 
 3.5 and fails the contest's mandatory requirement. That trap is documented in
 `docs/DEVIATIONS.md` D-001.
 
+### 5b. Deploy the Firestore rules — needs the Firebase CLI, not gcloud
+
+`bootstrap_gcp.sh` provisions everything else, but Firestore security rules are deployed by
+the Firebase CLI; there is no `gcloud firestore rules` command. The rules guard the **browser**
+write path to `grades/`; the custom IAM role guards the **service-account** path. Neither
+substitutes for the other, and skipping this leaves `grades/` writable from a browser session.
+
+```bash
+npm i -g firebase-tools && firebase login
+firebase deploy --only firestore:rules --project asili-61171
+```
+
+*Why not me:* `firebase login` is a browser OAuth flow.
+
 ### 6. Arm the budget alerts
 
 $25 / $50 / $100 / $140, at https://console.cloud.google.com/billing/budgets. Alerts lag up to
