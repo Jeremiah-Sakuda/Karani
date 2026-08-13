@@ -31,4 +31,4 @@ USER karani
 EXPOSE 8080
 
 # Default: the docket service. The Job overrides this with `run --live`.
-CMD ["python", "-m", "karani.cli", "docket", "--golden", "fixtures/golden-log.jsonl", "--port", "8080"]
+CMD ["python", "-m", "karani.cli", "docket", "--golden", "fixtures/recorded-run.jsonl", "--port", "8080"]

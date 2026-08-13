@@ -7,14 +7,12 @@ make demo
 Zero credentials. Zero Java. Zero Docker. Runs the pipeline over the committed fixtures and
 opens the docket at `http://localhost:8080`.
 
-> **Current state, stated plainly.** `make demo` runs the whole deterministic pipeline —
-> discovery, rendition freeze, span registry, injection scan, validation, the fold, and the
-> docket. The one thing it cannot do yet is replay model output, because
-> **`fixtures/cache/` has not been recorded**: the Google Cloud project this deploys to does
-> not have billing enabled, so no model call has ever executed. Karani will not fabricate
-> one — a stubbed response would make the offline demo a different system from the one in
-> the video. Until the cache is recorded with `make record-cache`, `make demo` explains this
-> and serves the committed reference run instead. `make docket-golden` works fully today.
+> **What `make demo` actually replays.** 187 model responses recorded from a real 16-submission
+> run against Vertex AI (`gemini-3.6-flash` + `gemini-3.5-flash-lite`, temperature 0), committed
+> to `fixtures/cache/`. The offline run serves 21 of 21 calls from that cache and produces
+> results identical to the live run. Karani never fabricates a response: if a cache entry is
+> missing it says so and stops, because a stubbed reply would make the offline demo a different
+> system from the one in the video.
 
 ---
 
@@ -37,20 +35,19 @@ evaluates Firestore rules and an emulator never evaluates IAM, so each mechanism
 to the other's test.
 
 *Verification status, stated precisely:* the rules, the custom role, and the negative-test
-matrix are in this repository and the matrix is read directly by the test suite. The
-**deployed-path** assertion (`pytest -m deployed`) has **not yet run**, because the Google
-Cloud project does not have billing enabled. Until it does, the language discipline in
-`AGENTS.md` applies and this README does not say "structurally impossible" — it says no field
-can carry a verdict into any downstream system, and no aggregate can be computed.
+matrix are in this repository, and the matrix is read directly by the test suite. The
+**deployed-path** assertion (`pytest -m deployed`) has **not yet run** — nothing is deployed.
+Until it has, the language discipline in `AGENTS.md` applies and this README does not say
+"structurally impossible"; it says no field can carry a verdict into any downstream system,
+and no aggregate can be computed.
 
 ## What makes this different from an auto-grader
 
 An auto-grader's product is the score. Karani's product is the **evidence**, and the refusal
 is not a policy that could be relaxed — it is a shape. There is no field on any record in this
 system that could hold a grade. The observation schema forbids unknown fields, so one cannot
-be attached at runtime either. The public challenge box answers with the schema itself — run `make docket-golden`
-and open `/challenge`. (It is not yet hosted: nothing is deployed, because the Google Cloud
-project does not have billing enabled.)
+be attached at runtime either. The public challenge box answers with the schema itself — run `make docket-golden` and open
+`/challenge`. (Not yet hosted: the deploy has not been run.)
 
 **Karani's output is designed to be contestable.** Supersession instead of mutation. Diff
 across runs. Absence as a first-class value. Escalation instead of guessing. An appeal packet
@@ -247,10 +244,24 @@ Every number in this README, either diagram, the Devpost description, the blog, 
 with its measurement method named. In-process timings are never presented as deployed
 measurements. Estimates are labelled estimates.
 
-**As of this commit, `docs/metrics.json` reads "not yet measured" throughout**, because no
-instrumented run has executed — the project it deploys to does not yet have billing enabled.
-That is the correct state for the file, and it is stated here rather than filled with
-plausible values.
+Measured on a live 16-submission run (`gemini-3.6-flash` + `gemini-3.5-flash-lite`, Vertex AI,
+temperature 0):
+
+| | |
+|---|---|
+| observations | 75 across 15 submissions |
+| first-attempt acceptance | **90.5%** (67 / 74) |
+| entailment disagreement rate | **6.8%** (5 / 74), after the one revision cycle KAR-310 permits — 13.5% before it |
+| accepted after bounded retry | 7 |
+| attempt cap reached → `NEEDS_HUMAN` | 1 |
+| warm-cache hit rate | **100%** (21 / 21) |
+| planted fixtures behaving as their manifest predicts | **6 of 6** |
+
+**Still "not yet measured", deliberately:** the dollar cost per run, every deployed-path
+timing, and the KAR-205 friction numbers. Nothing is deployed yet, and `gemini-3.6-flash` bills
+thinking tokens — 222 on a 32-token prompt in one smoke test — so a token-arithmetic cost
+estimate would understate the real figure. That number comes from the billing console or it
+does not appear.
 
 ## Fixtures and data provenance
 

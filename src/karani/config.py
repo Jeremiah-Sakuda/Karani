@@ -96,7 +96,7 @@ class Settings:
     local_store_dir: Path = REPO_ROOT / ".karani" / "store"
     cache_dir: Path = REPO_ROOT / "fixtures" / "cache"
     source_dir: Path = REPO_ROOT / "fixtures"
-    golden_log: Path = REPO_ROOT / "fixtures" / "golden-log.jsonl"
+    golden_log: Path = REPO_ROOT / "fixtures" / "recorded-run.jsonl"
     armor_template: str = ""
     delivery_drive_folder_id: str = ""
     delivery_mode: str = "local"

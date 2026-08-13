@@ -50,9 +50,9 @@ demo-emulator: $(BIN)/python ## Higher-fidelity demo against the Firestore emula
 	$(BIN)/python -m karani.cli run --source fixtures --offline
 	docker compose down
 
-docket-golden: $(BIN)/python ## Serve the docket over the committed golden log. No model, no cloud.
+docket-golden: $(BIN)/python ## Serve the docket over the recorded live run. No model, no cloud.
 	KARANI_STORE_BACKEND=local \
-	$(BIN)/python -m karani.cli docket --golden fixtures/golden-log.jsonl
+	$(BIN)/python -m karani.cli docket --golden fixtures/recorded-run.jsonl
 
 dev-run: $(BIN)/python ## Pipeline over the 3-submission dev subset — the only set used for iteration.
 	KARANI_STORE_BACKEND=local \
