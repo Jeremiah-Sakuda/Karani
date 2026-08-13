@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# KAR-002. Runs before every commit, not only in CI.
+#
+# A secret caught in CI is already public: the commit exists, the push happened, and this
+# repository's history is a compliance artifact that is never rewritten. The only useful
+# place to catch a key is before it becomes a commit.
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+if command -v gitleaks >/dev/null 2>&1; then
+  if ! gitleaks protect --staged --redact --config .gitleaks.toml --no-banner; then
+    echo ""
+    echo "COMMIT BLOCKED: gitleaks found a secret in the staged changes."
+    echo "Remove it from the working tree. Do not use --no-verify."
+    exit 1
+  fi
+else
+  # Fail closed on the patterns that actually matter here, rather than waving the commit
+  # through because a tool is missing.
+  #
+  # Four files are excluded because their whole job is to *describe* credential shapes so
+  # that the scanners can find them. Scanning them finds the descriptions, every time,
+  # forever. That is a false positive with a 100% hit rate, and a check that always fires
+  # is a check that gets bypassed with --no-verify — which is how the real secret gets
+  # through. The exclusion is by exact path: a new file cannot inherit it.
+  staged="$(git diff --cached --name-only --diff-filter=ACM \
+    | grep -vxF -e '.gitleaks.toml' -e '.githooks/pre-commit' -e '.gitignore' -e '.env.example' || true)"
+  if [ -n "$staged" ]; then
+    if git diff --cached -U0 -- $staged \
+        | grep -nE '"type"[[:space:]]*:[[:space:]]*"service_account"|"private_key_id"[[:space:]]*:[[:space:]]*"[a-f0-9]{40}"|AIza[0-9A-Za-z_-]{35}|-----BEGIN [A-Z ]*PRIVATE KEY-----' \
+        >/dev/null 2>&1; then
+      echo "COMMIT BLOCKED: a credential-shaped string is present in the staged changes."
+      echo "(gitleaks is not installed; this is the built-in fallback check.)"
+      echo "Install gitleaks for full coverage:  brew install gitleaks"
+      exit 1
+    fi
+    echo "note: gitleaks not installed — ran the built-in fallback check only."
+  fi
+fi
+
+exit 0

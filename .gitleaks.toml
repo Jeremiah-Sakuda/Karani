@@ -1,0 +1,39 @@
+title = "Karani secret scanning"
+
+# Karani's threat model here is narrow and specific: a service-account key or an
+# API key reaching a public repository whose commit history is itself a compliance
+# artifact and can never be rewritten. gitleaks runs pre-commit, not just in CI,
+# because a secret caught in CI is already public.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "gcp-service-account-key"
+description = "GCP service account private key block"
+regex = '''"type"\s*:\s*"service_account"'''
+tags = ["gcp", "key"]
+
+[[rules]]
+id = "gcp-private-key-id"
+description = "GCP private_key_id field"
+regex = '''"private_key_id"\s*:\s*"[a-f0-9]{40}"'''
+tags = ["gcp", "key"]
+
+[[rules]]
+id = "google-api-key"
+description = "Google API key"
+regex = '''AIza[0-9A-Za-z\-_]{35}'''
+tags = ["google", "key"]
+
+[allowlist]
+description = "Fixtures and docs are synthetic by construction"
+paths = [
+  '''\.gitleaks\.toml$''',
+  '''\.env\.example$''',
+  '''fixtures/.*\.md$''',
+  '''docs/.*\.md$''',
+]
+# Note: the allowlist covers synthetic fixture prose, not fixture JSON. A key
+# pasted into a fixture is still a key.
+regexTarget = "match"

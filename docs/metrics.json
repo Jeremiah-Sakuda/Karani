@@ -1,0 +1,94 @@
+{
+  "_contract": "Every number appearing in the README, either architecture diagram, the Devpost description, the blog, or the video must exist in this file first, written by an instrumented run, with its measurement method named. In-process timings are never presented as deployed measurements. Estimates are labelled 'estimate' until an instrumented run replaces them. A number that was not measured is the string 'not yet measured' — never a plausible value.",
+  "_schema": {
+    "value": "the number, or the literal string 'not yet measured'",
+    "unit": "unit of measure",
+    "method": "how it was produced; 'estimate' entries name the arithmetic",
+    "measured_at": "ISO-8601 UTC, or null if not yet measured",
+    "surface": "'local' | 'deployed' | 'estimate' — local timings are never quoted as deployed"
+  },
+  "cost": {
+    "per_run_15_estimate": {
+      "value": "not yet measured",
+      "unit": "USD",
+      "method": "estimate; §1.4 arithmetic recomputed at gemini-3.6-flash rates pending a rate confirmation and an instrumented run",
+      "measured_at": null,
+      "surface": "estimate"
+    },
+    "per_run_15_measured": {
+      "value": "not yet measured",
+      "unit": "USD",
+      "method": null,
+      "measured_at": null,
+      "surface": null
+    },
+    "scale_run_150_measured": {
+      "value": "not yet measured",
+      "unit": "USD",
+      "method": null,
+      "measured_at": null,
+      "surface": null
+    }
+  },
+  "validation": {
+    "first_attempt_acceptance_rate": {
+      "value": "not yet measured",
+      "unit": "fraction",
+      "method": null,
+      "measured_at": null,
+      "surface": null
+    },
+    "entailment_disagreement_rate": {
+      "value": "not yet measured",
+      "unit": "fraction",
+      "method": null,
+      "measured_at": null,
+      "surface": null
+    },
+    "entailment_branch_taken": {
+      "value": "not yet measured",
+      "unit": "enum: accept | one_revision_cycle | accept_and_report",
+      "method": "pre-committed in KAR-310 before measurement, to keep the response from being chosen after seeing the number",
+      "measured_at": null,
+      "surface": null
+    },
+    "retry_distribution": {
+      "value": "not yet measured",
+      "unit": "histogram over attempts",
+      "method": null,
+      "measured_at": null,
+      "surface": null
+    },
+    "cache_hit_rate": {
+      "value": "not yet measured",
+      "unit": "fraction",
+      "method": null,
+      "measured_at": null,
+      "surface": null
+    }
+  },
+  "scale_run": {
+    "submissions_ingested": { "value": "not yet measured", "unit": "count", "method": null, "measured_at": null, "surface": null },
+    "submissions_analyzed": { "value": "not yet measured", "unit": "count", "method": null, "measured_at": null, "surface": null },
+    "submissions_abandoned": { "value": "not yet measured", "unit": "count", "method": null, "measured_at": null, "surface": null },
+    "submissions_unparseable": { "value": "not yet measured", "unit": "count", "method": null, "measured_at": null, "surface": null },
+    "join_wall_clock": { "value": "not yet measured", "unit": "seconds", "method": null, "measured_at": null, "surface": null }
+  },
+  "beat_timings": {
+    "_note": "KAR-317 requires three measurements per beat on the deployed path. The §8 seconds table uses the worst of the three, never the best or the mean.",
+    "trigger_to_first_event": { "value": "not yet measured", "unit": "seconds", "method": null, "measured_at": null, "surface": null },
+    "docket_load": { "value": "not yet measured", "unit": "seconds", "method": null, "measured_at": null, "surface": null },
+    "denial_round_trip": { "value": "not yet measured", "unit": "seconds", "method": null, "measured_at": null, "surface": null }
+  },
+  "friction": {
+    "_note": "KAR-205. The headline claim is falsifiable only if these are measured on a real rubric with a documented method and a stated n.",
+    "baseline_minutes_per_submission": { "value": "not yet measured", "unit": "minutes", "method": null, "measured_at": null, "surface": null },
+    "with_karani_minutes_per_submission": { "value": "not yet measured", "unit": "minutes", "method": null, "measured_at": null, "surface": null },
+    "n_sessions": { "value": "not yet measured", "unit": "count", "method": null, "measured_at": null, "surface": null },
+    "measurement_is_self_timed": { "value": "not yet measured", "unit": "boolean", "method": "true if the pilot-instructor sessions did not happen and the disclosed self-timed fallback was used instead", "measured_at": null, "surface": null }
+  },
+  "fixtures": {
+    "planted_problems_total": { "value": "not yet measured", "unit": "count", "method": null, "measured_at": null, "surface": null },
+    "planted_problems_found": { "value": "not yet measured", "unit": "count", "method": null, "measured_at": null, "surface": null }
+  }
+}

@@ -1,0 +1,22 @@
+# Firestore emulator for the higher-fidelity demo path (`make demo-emulator`) and for
+# KAR-102's client-surface append-only assertion.
+#
+# This is NOT required for `make demo`. The default demo path runs on a file-backed store
+# with zero credentials, zero Java, and zero Docker — see docs/DEVIATIONS.md D-002 for why.
+#
+# The emulator is a Java process inside this image. If `make demo-emulator` fails with a
+# Java error, that is the emulator's requirement surfacing, not a Karani bug.
+services:
+  firestore-emulator:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:571.0.0-emulators
+    command: >
+      gcloud emulators firestore start
+      --host-port=0.0.0.0:8080
+      --project=karani-local
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -sf http://localhost:8080/ || exit 1"]
+      interval: 3s
+      timeout: 2s
+      retries: 20

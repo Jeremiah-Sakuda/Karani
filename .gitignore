@@ -1,0 +1,55 @@
+# --- Credentials: nothing resembling a key ever enters this repo ---
+*.json.key
+*-key.json
+*_key.json
+service-account*.json
+sa-*.json
+*credentials*.json
+application_default_credentials.json
+!fixtures/**/rubric.json
+!docs/metrics.json
+!package.json
+!package-lock.json
+!tsconfig.json
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+gha-creds-*.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Node (docket assets only) ---
+node_modules/
+
+# --- Local run state (never committed; the golden log is the committed artifact) ---
+.karani/
+runs/
+out/
+*.local.jsonl
+
+# --- Generated scale corpus: reproducible from seed, so never committed ---
+fixtures/scale/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# Local agent settings, not part of the project
+.claude/settings.local.json
