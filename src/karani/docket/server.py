@@ -63,8 +63,12 @@ def build_app(rendered: RenderedRun, store: Any | None = None) -> FastAPI:
     ) -> RedirectResponse:
         run = current()
         before = next(
-            (o for s in run.sheets for o in s.observations
-             if o.get("observation_id") == observation_id),
+            (
+                o
+                for s in run.sheets
+                for o in s.observations
+                if o.get("observation_id") == observation_id
+            ),
             None,
         )
         if before is None or state["store"] is None:
@@ -94,8 +98,13 @@ def build_app(rendered: RenderedRun, store: Any | None = None) -> FastAPI:
                 item_id=f"{student_id}::{before.get('criterion_id')}",
                 ts=now,
                 attempt=int(before.get("attempts", 1)),
-                payload={"student_id": student_id, "before": before, "after": after,
-                         "actor": "instructor", "ts": now.isoformat()},
+                payload={
+                    "student_id": student_id,
+                    "before": before,
+                    "after": after,
+                    "actor": "instructor",
+                    "ts": now.isoformat(),
+                },
             )
         )
         # Re-fold rather than patching the in-memory artifact. The artifact is a function of
@@ -133,8 +142,12 @@ def build_app(rendered: RenderedRun, store: Any | None = None) -> FastAPI:
                     "text": rendition.get("text"),
                 },
                 "anomalies": [
-                    {"kind": a.kind, "criterion_id": a.criterion_id, "detail": a.detail,
-                     "event_id": a.event_id}
+                    {
+                        "kind": a.kind,
+                        "criterion_id": a.criterion_id,
+                        "detail": a.detail,
+                        "event_id": a.event_id,
+                    }
                     for a in run.anomalies
                     if a.student_id == student_id
                 ],
@@ -154,6 +167,61 @@ def build_app(rendered: RenderedRun, store: Any | None = None) -> FastAPI:
             }
         )
 
+    @app.post("/ratify")
+    def ratify_and_deliver(student_ids: str = Form("")) -> HTMLResponse:
+        """Ratification — the step that turns evidence into delivered output (KAR-406).
+
+        This is the action the Taskmaster category is actually about: *"sends the right info
+        to the right places."* Everything upstream produces evidence; this is where the
+        workflow ends somewhere the instructor already works.
+
+        The grade column of the exported CSV reads exclusively from `grades/`, which no
+        pipeline identity can write. If the instructor has not graded, the column is empty —
+        Karani exports blank cells rather than filling them in.
+        """
+        from karani.config import REPO_ROOT, Settings
+        from karani.delivery.deliver import deliver
+
+        run = current()
+        settings = Settings.from_env()
+        targets = {s.strip() for s in student_ids.split(",") if s.strip()} or {
+            s.student_id for s in run.sheets
+        }
+
+        result = deliver(
+            run,
+            out_dir=REPO_ROOT / "out" / run.run_id / "delivered",
+            # Read from grades/ under the caller's own credentials. Empty here because no
+            # pipeline identity may read or write that collection; the deployed docket passes
+            # the instructor's session-scoped values.
+            grades=state.get("grades") or {},
+            drive_folder_id=settings.delivery_drive_folder_id,
+            ratified=targets,
+        )
+        if state["store"] is not None:
+            for event in result.events:
+                state["store"].create(event)
+            state["run"] = render(run.run_id, state["store"].read_run(run.run_id))
+
+        files = "".join(f"<li class='mono'>{f}</li>" for f in result.files)
+        return HTMLResponse(
+            page(
+                "Karani — delivered",
+                f"""
+<nav class="crumbs"><a href="/">← class docket</a></nav>
+<h1>Delivered</h1>
+<p class="sub">{len(result.files)} artifact(s) written to
+   <span class="mono">{result.destination}</span>, and
+   {len(result.events)} <span class="mono">ArtifactDelivered</span> event(s) appended.</p>
+<div class="panel"><ul>{files}</ul></div>
+<div class="notice">The CSV's grade column is populated exclusively from
+   <span class="mono">grades/</span> — written by the instructor's own session, and unwritable
+   by every pipeline identity. {result.grades_absent} row(s) have an empty grade cell because
+   no grade has been entered. Karani exports the blank rather than filling it.</div>
+""",
+            )
+        )
+
     @app.get("/healthz")
     def healthz() -> JSONResponse:
         return JSONResponse({"ok": True, "run_id": current().run_id})
@@ -163,9 +231,11 @@ def build_app(rendered: RenderedRun, store: Any | None = None) -> FastAPI:
         return JSONResponse(json.loads(current().to_json()))
 
     @app.exception_handler(404)
-    def not_found(_request, _exc) -> HTMLResponse:  # noqa: ANN001
-        return HTMLResponse(page("Not found", "<h1>Not found</h1>"
-                                 "<p><a href='/'>class docket</a></p>"), status_code=404)
+    def not_found(_request: Any, _exc: Any) -> HTMLResponse:
+        return HTMLResponse(
+            page("Not found", "<h1>Not found</h1><p><a href='/'>class docket</a></p>"),
+            status_code=404,
+        )
 
     return app
 

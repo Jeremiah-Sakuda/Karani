@@ -106,7 +106,9 @@ def main() -> int:
     s4 = section_four(prd_text)
     rep.defined = {m.group(1) for m in DEF_RE.finditer(s4)}
     if not rep.defined:
-        rep.errors.append("PRD §4 defines no requirements at all — the parse is wrong or §4 is empty.")
+        rep.errors.append(
+            "PRD §4 defines no requirements at all — the parse is wrong or §4 is empty."
+        )
 
     # --- 2. What §2's matrix claims ---------------------------------------------------
     s2 = section_two(prd_text)

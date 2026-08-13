@@ -108,9 +108,7 @@ def build_analysis_prompt(
     feedback: str = "",
 ) -> str:
     """The user-turn payload: rubric, then the submission with span IDs inline."""
-    rubric_lines = "\n".join(
-        f"  {c.criterion_id}  {c.name} — {c.description}" for c in criteria
-    )
+    rubric_lines = "\n".join(f"  {c.criterion_id}  {c.name} — {c.description}" for c in criteria)
 
     retry_block = ""
     if feedback:

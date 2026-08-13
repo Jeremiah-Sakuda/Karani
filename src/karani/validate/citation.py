@@ -214,7 +214,9 @@ def validate_observation(
     absence from retry is what makes the attempt cap survivable.
     """
     if observation.kind == "no_evidence":
-        return ValidationResult(ok=True, verification=Verification(referential=None, quote_check=None))
+        return ValidationResult(
+            ok=True, verification=Verification(referential=None, quote_check=None)
+        )
 
     assert observation.citation is not None  # guaranteed by the schema's model_validator
     return validate_citation(

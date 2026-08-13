@@ -110,7 +110,9 @@ class Settings:
         store = os.environ.get("KARANI_STORE_BACKEND", "local")
         model = os.environ.get("KARANI_MODEL_BACKEND", "cache")
         if store not in ("local", "emulator", "firestore"):
-            raise ValueError(f"KARANI_STORE_BACKEND must be local|emulator|firestore, got {store!r}")
+            raise ValueError(
+                f"KARANI_STORE_BACKEND must be local|emulator|firestore, got {store!r}"
+            )
         if model not in ("cache", "vertex"):
             raise ValueError(f"KARANI_MODEL_BACKEND must be cache|vertex, got {model!r}")
 

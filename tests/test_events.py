@@ -59,11 +59,22 @@ def test_content_hash_excludes_the_timestamp():
     `EventIdCollision`. The collision alarm would fire constantly, operators would learn to
     ignore it, and it would be useless on the one occasion it mattered.
     """
-    first = Event.build(run_id="run-1", step=Step.OBSERVATION_ACCEPTED, item_id="s01::c1",
-                        ts=T, attempt=1, payload={"observation_id": "obs-1"})
-    later = Event.build(run_id="run-1", step=Step.OBSERVATION_ACCEPTED, item_id="s01::c1",
-                        ts=datetime(2026, 8, 12, 4, 30, tzinfo=UTC), attempt=1,
-                        payload={"observation_id": "obs-1"})
+    first = Event.build(
+        run_id="run-1",
+        step=Step.OBSERVATION_ACCEPTED,
+        item_id="s01::c1",
+        ts=T,
+        attempt=1,
+        payload={"observation_id": "obs-1"},
+    )
+    later = Event.build(
+        run_id="run-1",
+        step=Step.OBSERVATION_ACCEPTED,
+        item_id="s01::c1",
+        ts=datetime(2026, 8, 12, 4, 30, tzinfo=UTC),
+        attempt=1,
+        payload={"observation_id": "obs-1"},
+    )
 
     assert first.event_id == later.event_id
     assert first.content_hash == later.content_hash

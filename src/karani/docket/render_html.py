@@ -141,14 +141,35 @@ def _outcome_of(obs: dict[str, Any]) -> str:
     return "accepted_after_retry" if int(obs.get("attempts", 1)) > 1 else "accepted_first_attempt"
 
 
+def _reference_banner(run: RenderedRun) -> str:
+    """Say on the page what this run is, when it is the hand-constructed one.
+
+    The reference log exercises all six terminal outcomes and every rendering path, and no
+    model produced a word of it. A viewer looking at an evidence sheet has no way to tell that
+    apart from a real run, so the page says it rather than leaving it to the JSON.
+    """
+    if run.run_id != "run-golden":
+        return ""
+    return (
+        '<div class="notice"><strong>Reference run.</strong> This event log is '
+        "hand-constructed, not the output of a model run. Its observations were authored to "
+        "exercise all six terminal outcomes and every rendering path; "
+        '<span class="mono">provenance.model_id</span> on each one reads '
+        '<span class="mono">none (hand-constructed reference run)</span>. '
+        'Run <span class="mono">make record-cache</span> to replace it with a recorded '
+        "model run.</div>"
+    )
+
+
 def overview_page(run: RenderedRun) -> str:
     o = run.overview
     counts = o["terminal_outcomes"]
+    reference_banner = _reference_banner(run)
 
     # The divergence tour (§8 beat 4): all six terminal outcomes of one unattended run, on
     # one screen. Ordered by pipeline position, not by desirability.
     tour = "".join(
-        f'<div class="panel"><div class="count">{counts.get(k,0)}</div>'
+        f'<div class="panel"><div class="count">{counts.get(k, 0)}</div>'
         f'<div class="count-label">{_e(label)}</div></div>'
         for k, label in OUTCOME_LABELS.items()
     )
@@ -202,14 +223,15 @@ def overview_page(run: RenderedRun) -> str:
         f"""
 <header class="top">
   <h1>Class docket</h1>
-  <p class="sub mono">run {_e(run.run_id)} · {o['students_total']} submissions ·
-     {o['observations_total']} observations</p>
+  <p class="sub mono">run {_e(run.run_id)} · {o["students_total"]} submissions ·
+     {o["observations_total"]} observations</p>
   <p class="thesis">Clerks prepare the case. Judges decide it. Karani is only ever the clerk.</p>
 </header>
 
 <div class="notice">Karani prepares evidence. It cannot grade. There is no score on this page,
 no ranking, and no field anywhere in the system that could hold one —
 <a href="/challenge">try to make it give you a grade</a>.</div>
+{reference_banner}
 
 <h2>Six outcomes, one unattended run</h2>
 <div class="grid three">{tour}</div>
@@ -229,6 +251,17 @@ no ranking, and no field anywhere in the system that could hold one —
 </div>
 
 {excluded_block}
+
+<h2>Ratify and deliver</h2>
+<div class="panel">
+  <p class="sub">Ratification writes the rendered evidence sheets to the instructor's Drive
+     folder and exports the CSV for LMS import. The CSV's grade column reads exclusively from
+     <span class="mono">grades/</span> — which no pipeline identity can write.</p>
+  <form method="post" action="/ratify">
+    <input type="hidden" name="student_ids" value="">
+    <button type="submit">Ratify all and deliver</button>
+  </form>
+</div>
 
 <h2>Anomaly queue</h2>
 <div class="panel scroll">
@@ -261,8 +294,10 @@ def student_page(run: RenderedRun, student_id: str) -> str:
         # Generated text is Karani speaking, so it is linted and masked. See
         # karani.validate.lint for why the student's own quote never is.
         linted = lint_generated_text(str(obs.get("text", "")))
-        chips = [f'<span class="chip{" strong" if obs.get("needs_human") else ""}">'
-                 f'{_e(OUTCOME_LABELS[outcome])}</span>']
+        chips = [
+            f'<span class="chip{" strong" if obs.get("needs_human") else ""}">'
+            f"{_e(OUTCOME_LABELS[outcome])}</span>"
+        ]
         if linted.masked:
             chips.append('<span class="chip strong">verdict language masked</span>')
 
@@ -297,18 +332,18 @@ def student_page(run: RenderedRun, student_id: str) -> str:
             body += f'<p class="sub">Escalated: {_e(obs["needs_human_reason"])}</p>'
 
         blocks += f"""
-<div class="obs{' flagged' if obs.get('needs_human') else ''}">
-  <h3><span class="mono">{_e(obs.get('criterion_id'))}</span> {' '.join(chips)}</h3>
+<div class="obs{" flagged" if obs.get("needs_human") else ""}">
+  <h3><span class="mono">{_e(obs.get("criterion_id"))}</span> {" ".join(chips)}</h3>
   {body}
   <details><summary>provenance</summary>
-    <p class="mono sub">model {_e(obs.get('provenance',{}).get('model_id'))} ·
-       prompt {_e(obs.get('provenance',{}).get('prompt_version'))} ·
-       temperature {_e(obs.get('provenance',{}).get('temperature'))} ·
-       attempt {_e(obs.get('attempts'))} ·
-       verification {_e(json.dumps(obs.get('verification', {})))}</p>
+    <p class="mono sub">model {_e(obs.get("provenance", {}).get("model_id"))} ·
+       prompt {_e(obs.get("provenance", {}).get("prompt_version"))} ·
+       temperature {_e(obs.get("provenance", {}).get("temperature"))} ·
+       attempt {_e(obs.get("attempts"))} ·
+       verification {_e(json.dumps(obs.get("verification", {})))}</p>
   </details>
   <form method="post" action="/edit" style="margin-top:.7rem">
-    <input type="hidden" name="observation_id" value="{_e(obs.get('observation_id'))}">
+    <input type="hidden" name="observation_id" value="{_e(obs.get("observation_id"))}">
     <input type="hidden" name="student_id" value="{_e(student_id)}">
     <details><summary>disagree with this observation</summary>
       <p class="sub" style="margin:.5rem 0">Your edit is recorded as a new observation that
@@ -351,6 +386,7 @@ def student_page(run: RenderedRun, student_id: str) -> str:
         f"Karani — {student_id}",
         f"""
 <nav class="crumbs"><a href="/">← class docket</a></nav>
+{_reference_banner(run)}
 <header class="top">
   <h1>Evidence sheet <span class="mono">{_e(student_id)}</span></h1>
   <p class="sub mono">{len(sheet.observations)} observations ·
@@ -382,10 +418,10 @@ def _locus(text: str, rendition: dict[str, Any], span_id: str, quote: str) -> st
         marked = (
             _e(span_text[:offset])
             + f"<mark>{_e(quote)}</mark>"
-            + _e(span_text[offset + len(quote):])
+            + _e(span_text[offset + len(quote) :])
         )
     return (
-        f'<details><summary>show the cited passage ({_e(span_id)})</summary>'
+        f"<details><summary>show the cited passage ({_e(span_id)})</summary>"
         f'<div class="locus">{marked}</div></details>'
     )
 
@@ -454,10 +490,12 @@ def challenge_answer(ask: str) -> str:
     """The schema's own rejection, quoted back."""
     from karani.schema.observation import BANNED_FIELD_NAMES, Observation
 
-    asked_for = sorted(
-        name for name in BANNED_FIELD_NAMES if name.replace("_", " ") in ask.lower()
+    asked_for = sorted(name for name in BANNED_FIELD_NAMES if name.replace("_", " ") in ask.lower())
+    named = (
+        f" You asked for something shaped like <span class='mono'>{_e(asked_for[0])}</span>."
+        if asked_for
+        else ""
     )
-    named = f" You asked for something shaped like <span class='mono'>{_e(asked_for[0])}</span>." if asked_for else ""
 
     fields = ", ".join(sorted(Observation.model_fields))
     return (

@@ -64,8 +64,30 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+# E501 (line length) is off for a specific reason rather than out of laziness: `ruff format`
+# already enforces the 100-column limit on CODE, and it deliberately does not reflow comments
+# or docstrings. This codebase carries long explanatory comments by design -- most of the
+# reasoning about why an invariant exists lives next to the code that enforces it -- and
+# hard-wrapping prose at 100 columns makes it harder to read, not easier.
+ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"
-strict = true
 files = ["src"]
+# Strict where Karani's own types carry the guarantees, pragmatic at the boundary with
+# untyped Google SDK surfaces. Turning strict off wholesale would be the easy move; this
+# keeps the checks that matter (no implicit Any in our own signatures, no untyped defs,
+# real Optional handling) and stops demanding annotations for third-party call results
+# that are Any no matter what we write.
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = ["google.*", "googleapiclient.*", "docx.*", "pypdf.*", "reportlab.*", "uvicorn.*"]
+ignore_missing_imports = true
+follow_imports = "skip"

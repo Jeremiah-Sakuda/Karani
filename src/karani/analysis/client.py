@@ -37,7 +37,9 @@ class ModelResponse:
 
 @runtime_checkable
 class ModelClient(Protocol):
-    def generate(self, *, system: str, prompt: str, model_id: str, key: CacheKey) -> ModelResponse: ...
+    def generate(
+        self, *, system: str, prompt: str, model_id: str, key: CacheKey
+    ) -> ModelResponse: ...
 
 
 class CacheOnlyClient:
@@ -71,9 +73,7 @@ class VertexClient:
             # contest requires the model be reached through one of those two surfaces, and
             # Karani only supports this one -- so the requirement is satisfied by the code
             # path, not by a configuration flag an operator might have set differently.
-            self._client = genai.Client(
-                vertexai=True, project=self.project, location=self.location
-            )
+            self._client = genai.Client(vertexai=True, project=self.project, location=self.location)
         return self._client
 
     def generate(self, *, system: str, prompt: str, model_id: str, key: CacheKey) -> ModelResponse:
@@ -116,7 +116,9 @@ class VertexClient:
         )
 
 
-def open_client(backend: str, cache: ResponseCache, project: str = "", location: str = "global") -> ModelClient:
+def open_client(
+    backend: str, cache: ResponseCache, project: str = "", location: str = "global"
+) -> ModelClient:
     if backend == "cache":
         return CacheOnlyClient(cache)
     if backend == "vertex":

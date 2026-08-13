@@ -200,8 +200,7 @@ def test_deployed_analysis_sa_cannot_mutate_an_event():
     from google.cloud import firestore
 
     client = firestore.Client(project=project)
-    doc = (client.collection("runs").document("run-iam-probe")
-           .collection("events").document("probe"))
+    doc = client.collection("runs").document("run-iam-probe").collection("events").document("probe")
     doc.create({"step": "RunStarted", "run_id": "run-iam-probe"})
 
     with pytest.raises(PermissionDenied):

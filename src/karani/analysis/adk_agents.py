@@ -36,6 +36,8 @@ is in turn what keeps an ordinary retry from raising `EventIdCollision`.
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from dataclasses import dataclass
+from dataclasses import field as _field
 from typing import Any
 
 from google.adk.agents import BaseAgent, SequentialAgent
@@ -44,11 +46,28 @@ from google.adk.events import Event as AdkEvent
 from google.genai import types
 
 from karani.analysis.dispatcher import RunSummary, run_pipeline
-from karani.render import render
+from karani.render import RenderedRun, render
+
+
+@dataclass
+class SharedResult:
+    """Mutable holder for what the agents produce.
+
+    ADK agents are pydantic models, and pydantic validates a `dict[str, Any]` field by
+    copying it -- so `self.context["summary"] = summary` inside an agent mutates a copy and
+    the caller never sees it. The copy is shallow, though, so a plain object stored *inside*
+    the context is the same object on both sides. That is what this is for.
+    """
+
+    summary: RunSummary | None = None
+    rendered: RenderedRun | None = None
+    trace: list[str] = _field(default_factory=list)
 
 
 def _say(author: str, text: str) -> AdkEvent:
-    return AdkEvent(author=author, content=types.Content(role="model", parts=[types.Part(text=text)]))
+    return AdkEvent(
+        author=author, content=types.Content(role="model", parts=[types.Part(text=text)])
+    )
 
 
 class DispatcherAgent(BaseAgent):
@@ -96,7 +115,7 @@ class AnalystValidatorAgent(BaseAgent):
             max_workers=c.get("max_workers", 8),
             t_max_seconds=c.get("t_max_seconds", 1200),
         )
-        c["summary"] = summary
+        c["shared"].summary = summary
         ctx.session.state["karani:completed"] = summary.completed
         ctx.session.state["karani:abandoned"] = summary.abandoned
         ctx.session.state["karani:failed"] = summary.failed
@@ -122,7 +141,7 @@ class AnomalyTriageAgent(BaseAgent):
         c = self.context
         events = c["store"].read_run(c["run_id"])
         rendered = render(c["run_id"], events)
-        c["rendered"] = rendered
+        c["shared"].rendered = rendered
 
         by_kind: dict[str, int] = {}
         for item in rendered.anomalies:
@@ -170,7 +189,7 @@ def build_pipeline_agent(context: dict[str, Any]) -> SequentialAgent:
     )
 
 
-async def run_with_adk(context: dict[str, Any]) -> list[str]:
+async def run_with_adk(context: dict[str, Any]) -> SharedResult:
     """Execute the topology through an ADK `Runner`. Returns the agents' trace lines.
 
     The trace is what KAR-302's acceptance criterion asks for: a visible
@@ -179,6 +198,7 @@ async def run_with_adk(context: dict[str, Any]) -> list[str]:
     from google.adk.runners import Runner
     from google.adk.sessions.in_memory_session_service import InMemorySessionService
 
+    shared = context.setdefault("shared", SharedResult())
     session_service = InMemorySessionService()
     app_name = "karani"
     user_id = "instructor"
@@ -200,4 +220,5 @@ async def run_with_adk(context: dict[str, Any]) -> list[str]:
             for part in event.content.parts:
                 if part.text:
                     trace.append(f"[{event.author}] {part.text}")
-    return trace
+    shared.trace = trace
+    return shared

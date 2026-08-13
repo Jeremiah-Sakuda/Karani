@@ -35,9 +35,13 @@ def main() -> int:
     if previous is None:
         print(f"wrote {OUT.relative_to(REPO)} ({lines} events)")
     elif previous == payload:
-        print(f"{OUT.relative_to(REPO)} unchanged ({lines} events) — regeneration is byte-identical")
+        print(
+            f"{OUT.relative_to(REPO)} unchanged ({lines} events) — regeneration is byte-identical"
+        )
     else:
-        print(f"UPDATED {OUT.relative_to(REPO)} ({lines} events) — content changed since last write")
+        print(
+            f"UPDATED {OUT.relative_to(REPO)} ({lines} events) — content changed since last write"
+        )
     return 0
 
 

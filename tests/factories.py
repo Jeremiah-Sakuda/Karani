@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from karani.canon import sha256_text
-from karani.config import MODEL_ANALYSIS, PROMPT_VERSION, TEMPERATURE
+from karani.config import PROMPT_VERSION, TEMPERATURE
 from karani.schema.events import Event, Step
 from karani.schema.observation import Citation, Observation, Provenance, Verification
 from karani.schema.rendition import Rendition
@@ -83,7 +83,14 @@ def demo_rendition() -> tuple[Rendition, SpanRegistry]:
     return rendition, registry
 
 
-def provenance(model_id: str = MODEL_ANALYSIS) -> Provenance:
+# NOT MODEL_ANALYSIS. These observations are hand-constructed to exercise the six terminal
+# outcomes; no model drafted them. Recording a real model ID here would make provenance{} --
+# the field whose entire job is to say what produced an observation -- state something false,
+# in the artifact the hosted docket serves and the video films.
+REFERENCE_MODEL_ID = "none (hand-constructed reference run)"
+
+
+def provenance(model_id: str = REFERENCE_MODEL_ID) -> Provenance:
     return Provenance(
         model_id=model_id,
         prompt_version=PROMPT_VERSION,
@@ -179,20 +186,27 @@ def golden_events(run_id: str = "run-golden") -> list[Event]:
     quote_intro = "The author opens by narrowing the question to a single decade."
 
     events: list[Event] = [
-        Event.build(run_id=run_id, step=Step.RUN_STARTED, item_id=run_id, ts=T0,
-                    payload={"submissions": 6}),
+        Event.build(
+            run_id=run_id, step=Step.RUN_STARTED, item_id=run_id, ts=T0, payload={"submissions": 6}
+        ),
     ]
 
     def ingest(sid: str, projection: str = "text") -> None:
         events.append(
             Event.build(
-                run_id=run_id, step=Step.SUBMISSION_INGESTED, item_id=sid, ts=T0,
+                run_id=run_id,
+                step=Step.SUBMISSION_INGESTED,
+                item_id=sid,
+                ts=T0,
                 payload={"student_id": sid, "source_projection": projection},
             )
         )
         events.append(
             Event.build(
-                run_id=run_id, step=Step.RENDITION_FROZEN, item_id=sid, ts=T0,
+                run_id=run_id,
+                step=Step.RENDITION_FROZEN,
+                item_id=sid,
+                ts=T0,
                 payload={"student_id": sid, "rendition_id": rendition.rendition_id},
             )
         )
@@ -202,75 +216,179 @@ def golden_events(run_id: str = "run-golden") -> list[Event]:
 
     # --- 1. accepted on the first attempt --------------------------------------------
     o1 = evidence_observation(
-        observation_id="obs-s01-c1", student_id="s01", criterion_id="c1",
-        span_id="sp-0000", quote=quote_intro, registry=registry, rendition_text=text,
+        observation_id="obs-s01-c1",
+        student_id="s01",
+        criterion_id="c1",
+        span_id="sp-0000",
+        quote=quote_intro,
+        registry=registry,
+        rendition_text=text,
         run_id=run_id,
     )
-    events.append(Event.build(run_id=run_id, step=Step.OBSERVATION_ACCEPTED,
-                              item_id="s01::c1", ts=T0, attempt=1,
-                              payload={"student_id": "s01", "observation": o1.model_dump(mode="json")}))
+    events.append(
+        Event.build(
+            run_id=run_id,
+            step=Step.OBSERVATION_ACCEPTED,
+            item_id="s01::c1",
+            ts=T0,
+            attempt=1,
+            payload={"student_id": "s01", "observation": o1.model_dump(mode="json")},
+        )
+    )
 
     # --- 2. accepted after a bounded retry -------------------------------------------
-    events.append(Event.build(run_id=run_id, step=Step.OBSERVATION_REJECTED,
-                              item_id="s02::c2", ts=T0, attempt=1,
-                              payload={"student_id": "s02", "criterion_id": "c2",
-                                       "failed_layer": "positional",
-                                       "reason": "quote occurs in the span but not at the cited location"}))
-    o2 = evidence_observation(
-        observation_id="obs-s02-c2", student_id="s02", criterion_id="c2",
-        span_id="sp-0047", quote=quote_47, registry=registry, rendition_text=text,
-        run_id=run_id, attempts=2,
+    events.append(
+        Event.build(
+            run_id=run_id,
+            step=Step.OBSERVATION_REJECTED,
+            item_id="s02::c2",
+            ts=T0,
+            attempt=1,
+            payload={
+                "student_id": "s02",
+                "criterion_id": "c2",
+                "failed_layer": "positional",
+                "reason": "quote occurs in the span but not at the cited location",
+            },
+        )
     )
-    events.append(Event.build(run_id=run_id, step=Step.OBSERVATION_ACCEPTED,
-                              item_id="s02::c2", ts=T0, attempt=2,
-                              payload={"student_id": "s02", "observation": o2.model_dump(mode="json")}))
+    o2 = evidence_observation(
+        observation_id="obs-s02-c2",
+        student_id="s02",
+        criterion_id="c2",
+        span_id="sp-0047",
+        quote=quote_47,
+        registry=registry,
+        rendition_text=text,
+        run_id=run_id,
+        attempts=2,
+    )
+    events.append(
+        Event.build(
+            run_id=run_id,
+            step=Step.OBSERVATION_ACCEPTED,
+            item_id="s02::c2",
+            ts=T0,
+            attempt=2,
+            payload={"student_id": "s02", "observation": o2.model_dump(mode="json")},
+        )
+    )
 
     # --- 3. NEEDS_HUMAN via entailment disagreement -----------------------------------
     o3 = evidence_observation(
-        observation_id="obs-s03-c3", student_id="s03", criterion_id="c3",
-        span_id="sp-0012", quote=quote_12, registry=registry, rendition_text=text,
+        observation_id="obs-s03-c3",
+        student_id="s03",
+        criterion_id="c3",
+        span_id="sp-0012",
+        quote=quote_12,
+        registry=registry,
+        rendition_text=text,
         run_id=run_id,
     )
-    events.append(Event.build(run_id=run_id, step=Step.OBSERVATION_DRAFTED,
-                              item_id="s03::c3", ts=T0, attempt=1,
-                              payload={"student_id": "s03", "observation": o3.model_dump(mode="json")}))
-    events.append(Event.build(run_id=run_id, step=Step.NEEDS_HUMAN_REVIEW,
-                              item_id="s03::c3", ts=T0, attempt=1,
-                              payload={"student_id": "s03", "criterion_id": "c3",
-                                       "observation_id": "obs-s03-c3",
-                                       "anomaly_kind": "entailment_disagreement",
-                                       "reason": "the cited span does not entail the drafted claim; "
-                                                 "routed to review without a regeneration attempt"}))
+    events.append(
+        Event.build(
+            run_id=run_id,
+            step=Step.OBSERVATION_DRAFTED,
+            item_id="s03::c3",
+            ts=T0,
+            attempt=1,
+            payload={"student_id": "s03", "observation": o3.model_dump(mode="json")},
+        )
+    )
+    events.append(
+        Event.build(
+            run_id=run_id,
+            step=Step.NEEDS_HUMAN_REVIEW,
+            item_id="s03::c3",
+            ts=T0,
+            attempt=1,
+            payload={
+                "student_id": "s03",
+                "criterion_id": "c3",
+                "observation_id": "obs-s03-c3",
+                "anomaly_kind": "entailment_disagreement",
+                "reason": "the cited span does not entail the drafted claim; "
+                "routed to review without a regeneration attempt",
+            },
+        )
+    )
 
     # --- 4. no_evidence, first-class and never retried --------------------------------
-    o4 = no_evidence_observation(observation_id="obs-s12-c4", student_id="s12",
-                                 criterion_id="c4", run_id=run_id)
-    events.append(Event.build(run_id=run_id, step=Step.NO_EVIDENCE_RECORDED,
-                              item_id="s12::c4", ts=T0, attempt=1,
-                              payload={"student_id": "s12", "observation": o4.model_dump(mode="json")}))
+    o4 = no_evidence_observation(
+        observation_id="obs-s12-c4", student_id="s12", criterion_id="c4", run_id=run_id
+    )
+    events.append(
+        Event.build(
+            run_id=run_id,
+            step=Step.NO_EVIDENCE_RECORDED,
+            item_id="s12::c4",
+            ts=T0,
+            attempt=1,
+            payload={"student_id": "s12", "observation": o4.model_dump(mode="json")},
+        )
+    )
 
     # --- 5. injection detected; analysis proceeds anyway -------------------------------
-    events.append(Event.build(run_id=run_id, step=Step.ARMOR_SCANNED, item_id="s07", ts=T0,
-                              payload={"student_id": "s07", "scanned_bytes": len(text)}))
-    events.append(Event.build(run_id=run_id, step=Step.INJECTION_DETECTED, item_id="s07", ts=T0,
-                              payload={"student_id": "s07", "span_id": "sp-0009",
-                                       "detail": "instruction-shaped text in a footnote directed at the "
-                                                 "reader of the submission rather than at a human grader"}))
+    events.append(
+        Event.build(
+            run_id=run_id,
+            step=Step.ARMOR_SCANNED,
+            item_id="s07",
+            ts=T0,
+            payload={"student_id": "s07", "scanned_bytes": len(text)},
+        )
+    )
+    events.append(
+        Event.build(
+            run_id=run_id,
+            step=Step.INJECTION_DETECTED,
+            item_id="s07",
+            ts=T0,
+            payload={
+                "student_id": "s07",
+                "span_id": "sp-0009",
+                "detail": "instruction-shaped text in a footnote directed at the "
+                "reader of the submission rather than at a human grader",
+            },
+        )
+    )
     o5 = evidence_observation(
-        observation_id="obs-s07-c1", student_id="s07", criterion_id="c1",
-        span_id="sp-0000", quote=quote_intro, registry=registry, rendition_text=text,
+        observation_id="obs-s07-c1",
+        student_id="s07",
+        criterion_id="c1",
+        span_id="sp-0000",
+        quote=quote_intro,
+        registry=registry,
+        rendition_text=text,
         run_id=run_id,
     )
-    events.append(Event.build(run_id=run_id, step=Step.OBSERVATION_ACCEPTED,
-                              item_id="s07::c1", ts=T0, attempt=1,
-                              payload={"student_id": "s07", "observation": o5.model_dump(mode="json")}))
+    events.append(
+        Event.build(
+            run_id=run_id,
+            step=Step.OBSERVATION_ACCEPTED,
+            item_id="s07::c1",
+            ts=T0,
+            attempt=1,
+            payload={"student_id": "s07", "observation": o5.model_dump(mode="json")},
+        )
+    )
 
     # --- 6. abandoned; the run completes around it -------------------------------------
-    events.append(Event.build(run_id=run_id, step=Step.TASK_ABANDONED, item_id="s13", ts=T0,
-                              payload={"student_id": "s13", "reason": "join_timeout"}))
+    events.append(
+        Event.build(
+            run_id=run_id,
+            step=Step.TASK_ABANDONED,
+            item_id="s13",
+            ts=T0,
+            payload={"student_id": "s13", "reason": "join_timeout"},
+        )
+    )
 
-    events.append(Event.build(run_id=run_id, step=Step.RENDER_COMPLETED, item_id=run_id, ts=T0,
-                              payload={"sheets": 6}))
+    events.append(
+        Event.build(
+            run_id=run_id, step=Step.RENDER_COMPLETED, item_id=run_id, ts=T0, payload={"sheets": 6}
+        )
+    )
     return events
 
 

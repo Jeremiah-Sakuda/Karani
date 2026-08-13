@@ -68,7 +68,9 @@ class SpanRegistry(BaseModel):
     spans: dict[str, Span]
 
     @classmethod
-    def build(cls, rendition_id: str, doc_id: str, text: str, paragraphs: list[tuple[int, int]]) -> SpanRegistry:
+    def build(
+        cls, rendition_id: str, doc_id: str, text: str, paragraphs: list[tuple[int, int]]
+    ) -> SpanRegistry:
         """Mint the closed vocabulary from a frozen rendition.
 
         `paragraphs` is the normalizer's paragraph→offset map: a list of (start, end)

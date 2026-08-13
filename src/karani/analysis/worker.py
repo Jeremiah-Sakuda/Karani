@@ -46,6 +46,7 @@ from karani.config import MAX_ATTEMPTS, MODEL_ANALYSIS, PROMPT_VERSION, TEMPERAT
 from karani.ingest.freeze import FrozenSubmission
 from karani.schema.events import Event, Step
 from karani.schema.observation import Citation, Observation, Provenance, Verification
+from karani.schema.rendition import Rendition
 from karani.triage.gemma import triage
 from karani.validate.citation import validate_citation
 from karani.validate.entailment import check_entailment
@@ -85,7 +86,10 @@ def analyze_submission(
 
     outcome.events.append(
         Event.build(
-            run_id=run_id, step=Step.SUBMISSION_INGESTED, item_id=ref.student_id, ts=ts,
+            run_id=run_id,
+            step=Step.SUBMISSION_INGESTED,
+            item_id=ref.student_id,
+            ts=ts,
             payload={
                 "student_id": ref.student_id,
                 "source_filename": ref.filename,
@@ -95,7 +99,10 @@ def analyze_submission(
     )
     outcome.events.append(
         Event.build(
-            run_id=run_id, step=Step.RENDITION_FROZEN, item_id=ref.student_id, ts=ts,
+            run_id=run_id,
+            step=Step.RENDITION_FROZEN,
+            item_id=ref.student_id,
+            ts=ts,
             payload={
                 "student_id": ref.student_id,
                 "rendition_id": rendition.rendition_id,
@@ -124,7 +131,10 @@ def analyze_submission(
     decision = triage(rendition.text, project=project)
     outcome.events.append(
         Event.build(
-            run_id=run_id, step=Step.TRIAGE_DECIDED, item_id=ref.student_id, ts=ts,
+            run_id=run_id,
+            step=Step.TRIAGE_DECIDED,
+            item_id=ref.student_id,
+            ts=ts,
             payload={
                 "student_id": ref.student_id,
                 "kind": decision.kind,
@@ -141,11 +151,15 @@ def analyze_submission(
         # failure -- nobody's submission went wrong here.
         outcome.events.append(
             Event.build(
-                run_id=run_id, step=Step.TASK_FAILED, item_id=ref.student_id, ts=ts,
+                run_id=run_id,
+                step=Step.TASK_FAILED,
+                item_id=ref.student_id,
+                ts=ts,
                 payload={
-                    "student_id": ref.student_id, "stage": "triage",
+                    "student_id": ref.student_id,
+                    "stage": "triage",
                     "reason": f"not a submission ({decision.reason}); "
-                              f"classified by {decision.decided_by}",
+                    f"classified by {decision.decided_by}",
                 },
             )
         )
@@ -157,7 +171,10 @@ def analyze_submission(
     scan = attribute_to_spans(scanner.scan(rendition.text), registry)
     outcome.events.append(
         Event.build(
-            run_id=run_id, step=Step.ARMOR_SCANNED, item_id=ref.student_id, ts=ts,
+            run_id=run_id,
+            step=Step.ARMOR_SCANNED,
+            item_id=ref.student_id,
+            ts=ts,
             payload={
                 "student_id": ref.student_id,
                 "detector": scan.detector,
@@ -172,7 +189,10 @@ def analyze_submission(
         injection_spans = {d.span_id for d in scan.detections if d.span_id}
         outcome.events.append(
             Event.build(
-                run_id=run_id, step=Step.INJECTION_DETECTED, item_id=ref.student_id, ts=ts,
+                run_id=run_id,
+                step=Step.INJECTION_DETECTED,
+                item_id=ref.student_id,
+                ts=ts,
                 payload={
                     "student_id": ref.student_id,
                     "detector": scan.detector,
@@ -232,7 +252,10 @@ def analyze_submission(
         except MalformedModelOutput as exc:
             outcome.events.append(
                 Event.build(
-                    run_id=run_id, step=Step.TASK_FAILED, item_id=ref.student_id, ts=ts,
+                    run_id=run_id,
+                    step=Step.TASK_FAILED,
+                    item_id=ref.student_id,
+                    ts=ts,
                     attempt=attempt,
                     payload={"student_id": ref.student_id, "stage": "analysis", "reason": str(exc)},
                 )
@@ -250,20 +273,30 @@ def analyze_submission(
                 outcome.no_evidence.append(obs)
                 outcome.events.append(
                     Event.build(
-                        run_id=run_id, step=Step.NO_EVIDENCE_RECORDED, item_id=item_id, ts=ts,
+                        run_id=run_id,
+                        step=Step.NO_EVIDENCE_RECORDED,
+                        item_id=item_id,
+                        ts=ts,
                         attempt=attempt,
-                        payload={"student_id": ref.student_id,
-                                 "observation": obs.model_dump(mode="json")},
+                        payload={
+                            "student_id": ref.student_id,
+                            "observation": obs.model_dump(mode="json"),
+                        },
                     )
                 )
                 continue
 
             outcome.events.append(
                 Event.build(
-                    run_id=run_id, step=Step.OBSERVATION_DRAFTED, item_id=item_id, ts=ts,
+                    run_id=run_id,
+                    step=Step.OBSERVATION_DRAFTED,
+                    item_id=item_id,
+                    ts=ts,
                     attempt=attempt,
-                    payload={"student_id": ref.student_id,
-                             "observation": obs.model_dump(mode="json")},
+                    payload={
+                        "student_id": ref.student_id,
+                        "observation": obs.model_dump(mode="json"),
+                    },
                 )
             )
 
@@ -278,12 +311,17 @@ def analyze_submission(
                 rejected.append((obs, result.rejection_reason))
                 outcome.events.append(
                     Event.build(
-                        run_id=run_id, step=Step.OBSERVATION_REJECTED, item_id=item_id, ts=ts,
+                        run_id=run_id,
+                        step=Step.OBSERVATION_REJECTED,
+                        item_id=item_id,
+                        ts=ts,
                         attempt=attempt,
-                        payload={"student_id": ref.student_id,
-                                 "criterion_id": obs.criterion_id,
-                                 "failed_layer": str(result.failed_layer),
-                                 "reason": result.feedback},
+                        payload={
+                            "student_id": ref.student_id,
+                            "criterion_id": obs.criterion_id,
+                            "failed_layer": str(result.failed_layer),
+                            "reason": result.feedback,
+                        },
                     )
                 )
                 continue
@@ -318,7 +356,10 @@ def analyze_submission(
                 outcome.needs_human.append(escalated)
                 outcome.events.append(
                     Event.build(
-                        run_id=run_id, step=Step.NEEDS_HUMAN_REVIEW, item_id=item_id, ts=ts,
+                        run_id=run_id,
+                        step=Step.NEEDS_HUMAN_REVIEW,
+                        item_id=item_id,
+                        ts=ts,
                         attempt=attempt,
                         payload={
                             "student_id": ref.student_id,
@@ -335,31 +376,44 @@ def analyze_submission(
             outcome.accepted.append(verified)
             outcome.events.append(
                 Event.build(
-                    run_id=run_id, step=Step.OBSERVATION_ACCEPTED, item_id=item_id, ts=ts,
+                    run_id=run_id,
+                    step=Step.OBSERVATION_ACCEPTED,
+                    item_id=item_id,
+                    ts=ts,
                     attempt=attempt,
-                    payload={"student_id": ref.student_id,
-                             "observation": verified.model_dump(mode="json")},
+                    payload={
+                        "student_id": ref.student_id,
+                        "observation": verified.model_dump(mode="json"),
+                    },
                 )
             )
 
         # Only the criteria that failed go around again.
         failed_ids = {obs.criterion_id for obs, _ in rejected}
         pending = [c for c in criteria if c.criterion_id in failed_ids]
-        feedback = "\n".join(
-            f"- {obs.criterion_id}: {reason}" for obs, reason in rejected
-        )
+        feedback = "\n".join(f"- {obs.criterion_id}: {reason}" for obs, reason in rejected)
 
     # --- attempt cap reached -----------------------------------------------------------
     for criterion in pending:
         item_id = f"{ref.student_id}::{criterion.criterion_id}"
         outcome.events.append(
             Event.build(
-                run_id=run_id, step=Step.NEEDS_HUMAN_REVIEW, item_id=item_id, ts=ts,
+                run_id=run_id,
+                step=Step.NEEDS_HUMAN_REVIEW,
+                item_id=item_id,
+                ts=ts,
                 attempt=MAX_ATTEMPTS,
                 payload={
                     "student_id": ref.student_id,
                     "criterion_id": criterion.criterion_id,
-                    "observation_id": f"obs-{ref.student_id}-{criterion.criterion_id}",
+                    # Must match the ID minted in _parse_observations, which carries the
+                    # attempt suffix. Without it the escalation names an observation that
+                    # does not exist, the fold cannot bind `needs_human` to anything, and the
+                    # anomaly queue shows an item pointing at nothing — the instructor is told
+                    # something needs review and given no way to see what.
+                    "observation_id": (
+                        f"obs-{ref.student_id}-{criterion.criterion_id}-a{MAX_ATTEMPTS}"
+                    ),
                     "anomaly_kind": "attempt_cap_reached",
                     "reason": (
                         f"citation validation failed on {MAX_ATTEMPTS} attempts; "
@@ -377,7 +431,7 @@ def _parse_observations(
     *,
     run_id: str,
     student_id: str,
-    rendition,  # noqa: ANN001
+    rendition: Rendition,
     attempt: int,
     ts: datetime,
     anchor_confidence: str,

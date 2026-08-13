@@ -47,7 +47,9 @@ INJECTION_NOTICE = "[quote masked — source passage flagged for injected instru
 
 # Nouns that refer to the student's work itself. A quality word attached to one of these is
 # a verdict about the submission; attached to anything else it is the student's argument.
-_WORK_REFERENT = r"(?:essay|paper|submission|work|assignment|response|writing|piece|draft|composition)"
+_WORK_REFERENT = (
+    r"(?:essay|paper|submission|work|assignment|response|writing|piece|draft|composition)"
+)
 
 _QUALITY = (
     r"excellent|outstanding|exemplary|superior|exceptional|flawless|masterful|"
@@ -176,8 +178,9 @@ def lint_quote(quote: str, *, injection_flagged: bool = False) -> QuoteLintResul
     if injection_flagged:
         # The premise "these are the student's words" no longer holds: the passage may be an
         # instruction aimed at whatever is reading the document.
-        return QuoteLintResult(text=INJECTION_NOTICE, masked=True, flagged=True,
-                               rules_fired=["injection_flagged_span"])
+        return QuoteLintResult(
+            text=INJECTION_NOTICE, masked=True, flagged=True, rules_fired=["injection_flagged_span"]
+        )
 
     fired = [
         name
@@ -187,11 +190,14 @@ def lint_quote(quote: str, *, injection_flagged: bool = False) -> QuoteLintResul
     ]
 
     # Never masked. The text is returned exactly as the student wrote it, chip or no chip.
-    return QuoteLintResult(text=quote, masked=False, flagged=bool(fired),
-                           rules_fired=sorted(set(fired)))
+    return QuoteLintResult(
+        text=quote, masked=False, flagged=bool(fired), rules_fired=sorted(set(fired))
+    )
 
 
-def lint_observation(observation_text: str, quote: str | None, *, injection_flagged: bool = False):
+def lint_observation(
+    observation_text: str, quote: str | None, *, injection_flagged: bool = False
+) -> tuple[LintResult, QuoteLintResult | None]:
     """Apply the split to one observation. Returns `(generated, quote_result_or_None)`."""
     generated = lint_generated_text(observation_text)
     quote_result = (

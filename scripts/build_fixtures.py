@@ -26,9 +26,21 @@ FIXTURES = REPO / "fixtures"
 
 # Which essay ships in which format, and why that pairing tests something.
 FORMATS = {
-    "s01": "md", "s03": "md", "s05": "md", "s08": "md", "s09": "md", "s12": "md", "s15": "md",
-    "s02": "docx", "s04": "docx", "s07": "docx", "s10": "docx", "s13": "docx",
-    "s06": "pdf", "s11": "pdf", "s14": "pdf",
+    "s01": "md",
+    "s03": "md",
+    "s05": "md",
+    "s08": "md",
+    "s09": "md",
+    "s12": "md",
+    "s15": "md",
+    "s02": "docx",
+    "s04": "docx",
+    "s07": "docx",
+    "s10": "docx",
+    "s13": "docx",
+    "s06": "pdf",
+    "s11": "pdf",
+    "s14": "pdf",
 }
 
 # The three-submission iteration subset (KAR-204). Chosen for behavioural coverage rather
@@ -74,14 +86,12 @@ def write_pdf(path: Path, essay: dict, *, with_chart: bool = False) -> None:
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib.units import inch
     from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
-    from reportlab.graphics.shapes import Drawing, Rect, String
-    from reportlab.platypus import Flowable
 
     styles = getSampleStyleSheet()
     story: list = [Paragraph(essay["title"], styles["Title"]), Spacer(1, 0.2 * inch)]
 
     paragraphs = markdown_to_paragraphs(essay["body"])
-    for index, paragraph in enumerate(paragraphs):
+    for paragraph in paragraphs:
         safe = paragraph.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         story.append(Paragraph(safe, styles["BodyText"]))
         story.append(Spacer(1, 0.10 * inch))
@@ -98,7 +108,6 @@ def write_pdf(path: Path, essay: dict, *, with_chart: bool = False) -> None:
 
 def _chart():
     """A small bar chart: subscription rate by household income band."""
-    from reportlab.graphics.shapes import Drawing, Rect, String
     from reportlab.platypus import Flowable
 
     class ChartFlowable(Flowable):

@@ -51,11 +51,11 @@ STRUCTURES = ["five_paragraph", "enumerated", "narrative_frame", "point_counterp
 # Each generated submission carries one or two of these, so the scale run exercises the same
 # routing paths as the authored corpus rather than being 150 clean documents.
 ERROR_PATTERNS = [
-    "no_counterargument",   # drives kind=no_evidence on c4
-    "unattributed_quote",   # drives a citation the validator can reject
-    "orphan_question",      # the s09 over-read shape
-    "under_length",         # a short submission
-    "citation_no_page",     # sloppy sourcing
+    "no_counterargument",  # drives kind=no_evidence on c4
+    "unattributed_quote",  # drives a citation the validator can reject
+    "orphan_question",  # the s09 over-read shape
+    "under_length",  # a short submission
+    "citation_no_page",  # sloppy sourcing
     "none",
 ]
 
@@ -100,9 +100,11 @@ def generate(index: int, rng: random.Random) -> tuple[str, str]:
     errors = rng.sample(ERROR_PATTERNS, k=rng.choice([1, 1, 2]))
 
     stance = rng.choice(["build and operate", "decline to build", "study before committing"])
-    stance_noun = {"build and operate": "public operation",
-                   "decline to build": "restraint",
-                   "study before committing": "a study period"}[stance]
+    stance_noun = {
+        "build and operate": "public operation",
+        "decline to build": "restraint",
+        "study before committing": "a study period",
+    }[stance]
 
     if "no_counterargument" in errors:
         counter = COUNTER_BLOCKS["absent"]
@@ -111,17 +113,33 @@ def generate(index: int, rng: random.Random) -> tuple[str, str]:
     else:
         counter = COUNTER_BLOCKS["present"]
 
-    surname = f"{rng.choice('BCDFGHKLMNPRSTVW')}{rng.choice(['aldwin','ernier','orley','anta','ilburn','oxley','underson','ashiro','elmar','ovic'])}"
+    surname = f"{rng.choice('BCDFGHKLMNPRSTVW')}{rng.choice(['aldwin', 'ernier', 'orley', 'anta', 'ilburn', 'oxley', 'underson', 'ashiro', 'elmar', 'ovic'])}"
     page = rng.randrange(11, 399)
     cite = f"({surname} {page})"
-    cite2 = f"({surname} {page + rng.randrange(2, 9)})" if "citation_no_page" not in errors else f"({surname})"
+    cite2 = (
+        f"({surname} {page + rng.randrange(2, 9)})"
+        if "citation_no_page" not in errors
+        else f"({surname})"
+    )
 
     body = BODY.format(
-        opener=opener, topic=topic, actor=actor, thing=thing, metric=metric,
-        position=stance, position_noun=stance_noun, connector=connector, closer=closer,
-        year=2021 + (index % 5), pct=rng.randrange(28, 88), proj=rng.randrange(40, 95),
-        cite=cite, cite2=cite2, thing_alt=rng.choice(["a water utility", "a fleet garage",
-                                                      "a records office", "a street department"]),
+        opener=opener,
+        topic=topic,
+        actor=actor,
+        thing=thing,
+        metric=metric,
+        position=stance,
+        position_noun=stance_noun,
+        connector=connector,
+        closer=closer,
+        year=2021 + (index % 5),
+        pct=rng.randrange(28, 88),
+        proj=rng.randrange(40, 95),
+        cite=cite,
+        cite2=cite2,
+        thing_alt=rng.choice(
+            ["a water utility", "a fleet garage", "a records office", "a street department"]
+        ),
         counter_block=counter.format(actor=actor, thing=thing, connector=connector),
     )
 

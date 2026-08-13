@@ -65,9 +65,11 @@ class ScriptedAnalyst:
             # disagreement, so the escalation path is exercised without being ambient.
             unsupported = "ENTAIL_FAIL" in prompt
             return ModelResponse(
-                text=json.dumps({"supported": not unsupported,
-                                 "reason": "scripted entailment verdict"}),
-                model_id=model_id, cached=False,
+                text=json.dumps(
+                    {"supported": not unsupported, "reason": "scripted entailment verdict"}
+                ),
+                model_id=model_id,
+                cached=False,
             )
 
         spans = SPAN_RE.findall(prompt)
@@ -82,20 +84,30 @@ class ScriptedAnalyst:
             span_text = span_text.strip()
 
             if behaviour == "no_evidence":
-                observations.append({
-                    "criterion_id": criterion_id, "kind": "no_evidence",
-                    "text": "No passage addressing this criterion was located.",
-                    "search_notes": f"Scanned {len(spans)} registered spans; none addressed it.",
-                })
+                observations.append(
+                    {
+                        "criterion_id": criterion_id,
+                        "kind": "no_evidence",
+                        "text": "No passage addressing this criterion was located.",
+                        "search_notes": f"Scanned {len(spans)} registered spans; none addressed it.",
+                    }
+                )
                 continue
 
             if behaviour == "fabricate_span":
-                observations.append({
-                    "criterion_id": criterion_id, "kind": "evidence",
-                    "text": "The submission addresses this criterion.",
-                    "citation": {"span_id": "sp-9999", "quote": "invented",
-                                 "prefix": "", "suffix": ""},
-                })
+                observations.append(
+                    {
+                        "criterion_id": criterion_id,
+                        "kind": "evidence",
+                        "text": "The submission addresses this criterion.",
+                        "citation": {
+                            "span_id": "sp-9999",
+                            "quote": "invented",
+                            "prefix": "",
+                            "suffix": "",
+                        },
+                    }
+                )
                 continue
 
             # An honest citation: quote a real sentence and report the context around it the
@@ -103,33 +115,49 @@ class ScriptedAnalyst:
             # neighbour and never including a [[sp-NNNN]] marker.
             sentence = _first_sentence(span_text)
             at = span_text.find(sentence)
-            prefix = span_text[max(0, at - CONTEXT_CHARS):at]
-            suffix = span_text[at + len(sentence):at + len(sentence) + CONTEXT_CHARS]
+            prefix = span_text[max(0, at - CONTEXT_CHARS) : at]
+            suffix = span_text[at + len(sentence) : at + len(sentence) + CONTEXT_CHARS]
 
             if behaviour == "misattribute" and len(spans) > 1:
                 # Same quote and context, wrong span. Layers 1 and 2 pass; only positional
                 # identity can reject it.
                 other = spans[(index + 1) % len(spans)][0]
-                observations.append({
-                    "criterion_id": criterion_id, "kind": "evidence",
-                    "text": "The submission addresses this criterion in the cited passage.",
-                    "citation": {"span_id": other, "quote": sentence,
-                                 "prefix": prefix, "suffix": suffix},
-                })
+                observations.append(
+                    {
+                        "criterion_id": criterion_id,
+                        "kind": "evidence",
+                        "text": "The submission addresses this criterion in the cited passage.",
+                        "citation": {
+                            "span_id": other,
+                            "quote": sentence,
+                            "prefix": prefix,
+                            "suffix": suffix,
+                        },
+                    }
+                )
                 continue
 
             text = "The submission addresses this criterion in the cited passage."
             if behaviour == "entail_fail":
                 text = "ENTAIL_FAIL the cited passage does something it does not do."
 
-            observations.append({
-                "criterion_id": criterion_id, "kind": "evidence", "text": text,
-                "citation": {"span_id": span_id, "quote": sentence,
-                             "prefix": prefix, "suffix": suffix},
-            })
+            observations.append(
+                {
+                    "criterion_id": criterion_id,
+                    "kind": "evidence",
+                    "text": text,
+                    "citation": {
+                        "span_id": span_id,
+                        "quote": sentence,
+                        "prefix": prefix,
+                        "suffix": suffix,
+                    },
+                }
+            )
 
-        return ModelResponse(text=json.dumps({"observations": observations}),
-                             model_id=model_id, cached=False)
+        return ModelResponse(
+            text=json.dumps({"observations": observations}), model_id=model_id, cached=False
+        )
 
 
 def _first_sentence(text: str) -> str:
@@ -161,7 +189,9 @@ def test_full_corpus_run_completes_and_routes_every_submission(tmp_path):
     """
     summary, rendered, _ = _run(tmp_path, FIXTURES, plan={"c4": "no_evidence"})
 
-    assert len(summary.dispatched) == 16, f"expected 16 submissions, got {sorted(summary.dispatched)}"
+    assert len(summary.dispatched) == 16, (
+        f"expected 16 submissions, got {sorted(summary.dispatched)}"
+    )
     accounted = set(summary.completed) | set(summary.failed) | set(summary.abandoned)
     assert accounted == set(summary.dispatched), "a dispatched unit reached no terminal state"
     assert "s16" in summary.failed, "the unparseable fixture did not fail visibly"
@@ -234,8 +264,11 @@ def test_misattributed_citation_is_rejected_then_retried_then_escalated(tmp_path
     _, rendered, store = _run(tmp_path, FIXTURES / "dev", plan={"c2": "misattribute"})
 
     events = store.read_run("run-test")
-    rejections = [e for e in events if e.step.value == "ObservationRejected"
-                  and e.payload.get("criterion_id") == "c2"]
+    rejections = [
+        e
+        for e in events
+        if e.step.value == "ObservationRejected" and e.payload.get("criterion_id") == "c2"
+    ]
     assert rejections, "the misattributed citation was accepted"
 
     # Rejected at a citation layer -- which one depends on the document, and both are correct
@@ -250,8 +283,11 @@ def test_misattributed_citation_is_rejected_then_retried_then_escalated(tmp_path
     attempts = {e.attempt for e in rejections}
     assert max(attempts) <= 2, f"more than two attempts were made: {sorted(attempts)}"
 
-    escalated = [e for e in events if e.step.value == "NeedsHumanReview"
-                 and e.payload.get("criterion_id") == "c2"]
+    escalated = [
+        e
+        for e in events
+        if e.step.value == "NeedsHumanReview" and e.payload.get("criterion_id") == "c2"
+    ]
     assert escalated, "the attempt cap did not produce a human-queue item"
     assert escalated[0].payload["anomaly_kind"] == "attempt_cap_reached"
 
@@ -260,9 +296,11 @@ def test_fabricated_span_is_rejected_at_the_referential_layer(tmp_path):
     """Property: an invented span ID fails set membership, the cheapest possible check."""
     _, _, store = _run(tmp_path, FIXTURES / "dev", plan={"c3": "fabricate_span"})
 
-    rejections = [e for e in store.read_run("run-test")
-                  if e.step.value == "ObservationRejected"
-                  and e.payload.get("criterion_id") == "c3"]
+    rejections = [
+        e
+        for e in store.read_run("run-test")
+        if e.step.value == "ObservationRejected" and e.payload.get("criterion_id") == "c3"
+    ]
     assert rejections
     assert rejections[0].payload["failed_layer"] == "referential"
 
@@ -278,13 +316,20 @@ def test_entailment_disagreement_escalates_without_a_retry(tmp_path):
     _, rendered, store = _run(tmp_path, FIXTURES / "dev", plan={"c5": "entail_fail"})
 
     events = store.read_run("run-test")
-    escalated = [e for e in events if e.step.value == "NeedsHumanReview"
-                 and e.payload.get("anomaly_kind") == "entailment_disagreement"]
+    escalated = [
+        e
+        for e in events
+        if e.step.value == "NeedsHumanReview"
+        and e.payload.get("anomaly_kind") == "entailment_disagreement"
+    ]
     assert escalated, "no entailment disagreement was escalated"
 
     # The decisive assertion: it was never sent back for another attempt.
-    retried = [e for e in events if e.step.value == "ObservationRejected"
-               and e.payload.get("criterion_id") == "c5"]
+    retried = [
+        e
+        for e in events
+        if e.step.value == "ObservationRejected" and e.payload.get("criterion_id") == "c5"
+    ]
     assert not retried, "an entailment disagreement was routed into the retry loop"
 
     disagreements = [a for a in rendered.anomalies if a.kind == "entailment_disagreement"]
@@ -325,8 +370,12 @@ def test_rerun_over_identical_inputs_is_stable(tmp_path):
 
     def shape(rendered):
         return sorted(
-            (c["student_id"], c["criterion_id"], c["kind"],
-             (c.get("citation") or {}).get("span_id"))
+            (
+                c["student_id"],
+                c["criterion_id"],
+                c["kind"],
+                (c.get("citation") or {}).get("span_id"),
+            )
             for c in rendered.claims
         )
 
@@ -340,9 +389,7 @@ def test_one_unattended_run_produces_divergent_outcomes(tmp_path, outcome):
     This is the video's central claim (§8 beat 4), so it is asserted against a real run over
     the real fixtures rather than against a hand-built log.
     """
-    _, rendered, _ = _run(
-        tmp_path, FIXTURES, plan={"c4": "no_evidence", "c2": "misattribute"}
-    )
+    _, rendered, _ = _run(tmp_path, FIXTURES, plan={"c4": "no_evidence", "c2": "misattribute"})
     assert rendered.overview["terminal_outcomes"][outcome] >= 1
 
 

@@ -111,12 +111,15 @@ def test_range_hash_changes_when_any_event_changes():
     assert len(full.source_events) == len(events)
 
 
-@pytest.mark.parametrize("outcome", [
-    "accepted_first_attempt",
-    "accepted_after_retry",
-    "needs_human",
-    "no_evidence",
-])
+@pytest.mark.parametrize(
+    "outcome",
+    [
+        "accepted_first_attempt",
+        "accepted_after_retry",
+        "needs_human",
+        "no_evidence",
+    ],
+)
 def test_golden_run_exercises_each_observation_outcome(outcome):
     """Property: the golden run really does diverge six ways.
 

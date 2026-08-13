@@ -1,9 +1,9 @@
 """Karani's command line.
 
-    karani run       ingest -> analyse -> validate -> render, over a source directory
-    karani docket    serve the docket over a run, or over the committed golden log
-    karani verify    re-fold an artifact from its events and compare
-    karani preflight resolve the pinned model IDs against the live publisher catalogue
+karani run       ingest -> analyse -> validate -> render, over a source directory
+karani docket    serve the docket over a run, or over the committed golden log
+karani verify    re-fold an artifact from its events and compare
+karani preflight resolve the pinned model IDs against the live publisher catalogue
 """
 
 from __future__ import annotations
@@ -50,9 +50,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     cache = ResponseCache(settings.cache_dir)
     backend = "cache" if args.offline else settings.model_backend
     client = open_client(backend, cache, project=settings.project, location=settings.location)
-    scanner = open_scanner(
-        template=settings.armor_template, project=settings.project
-    )
+    scanner = open_scanner(template=settings.armor_template, project=settings.project)
 
     run_id = args.run_id or f"run-{datetime.now(UTC):%Y%m%dT%H%M%SZ}"
     store = open_store(settings)
@@ -64,17 +62,39 @@ def cmd_run(args: argparse.Namespace) -> int:
     print(f"store     {settings.store_backend}")
     print()
 
+    # The run executes through the ADK topology -- dispatcher, analyst+validator, anomaly
+    # triage -- rather than calling run_pipeline directly. That is what makes "Google ADK" a
+    # statement about the execution path instead of about a module that exists.
+    context: dict = {
+        "run_id": run_id,
+        "source": open_source("local", source_dir),
+        "criteria": criteria,
+        "store": store,
+        "client": client,
+        "cache": cache,
+        "scanner": scanner,
+        "max_workers": args.workers,
+        "project": settings.project,
+    }
+
     try:
-        summary = run_pipeline(
-            run_id=run_id,
-            source=open_source("local", source_dir),
-            criteria=criteria,
-            store=store,
-            client=client,
-            cache=cache,
-            scanner=scanner,
-            max_workers=args.workers,
-        )
+        if args.no_adk:
+            summary = run_pipeline(
+                **{k: v for k, v in context.items() if k != "project"}
+                | {"project": settings.project}
+            )
+        else:
+            import asyncio
+
+            from karani.analysis.adk_agents import run_with_adk
+
+            shared = asyncio.run(run_with_adk(context))
+            assert shared.summary is not None
+            summary = shared.summary
+            print("agent trace")
+            for line in shared.trace:
+                print(f"  {line}")
+            print()
     except MissingCacheEntry as exc:
         # The offline path never invents a model response, so an empty cache stops the run.
         # What matters here is what the operator is told: this is a setup state, not a broken
@@ -108,7 +128,11 @@ def cmd_run(args: argparse.Namespace) -> int:
             from karani.docket.server import serve
 
             golden = read_jsonl_log(settings.golden_log)
-            serve(render(golden[0].run_id if golden else "run-golden", golden), port=int(args.port))
+            serve(
+                render(golden[0].run_id if golden else "run-golden", golden),
+                port=int(args.port),
+                store=store,
+            )
         return 3
 
     rendered = render(run_id, store.read_run(run_id))
@@ -116,8 +140,10 @@ def cmd_run(args: argparse.Namespace) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "rendered.json").write_text(rendered.to_json(), encoding="utf-8")
 
-    print(f"completed {len(summary.completed)}   failed {len(summary.failed)}   "
-          f"abandoned {len(summary.abandoned)}")
+    print(
+        f"completed {len(summary.completed)}   failed {len(summary.failed)}   "
+        f"abandoned {len(summary.abandoned)}"
+    )
     print(f"events    {summary.events_written}")
     print(f"model     {summary.model_calls} calls ({summary.cached_calls} from cache)")
     print()
@@ -137,7 +163,10 @@ def cmd_run(args: argparse.Namespace) -> int:
     if args.open_docket:
         from karani.docket.server import serve
 
-        serve(rendered, port=int(args.port))
+        # The store is passed so edit-as-supersession works. Without it the /edit route
+        # returns early and the instructor-disagrees flow -- the whole point of ratification
+        # -- silently does nothing.
+        serve(rendered, port=int(args.port), store=store)
     return 0
 
 
@@ -158,7 +187,7 @@ def cmd_docket(args: argparse.Namespace) -> int:
             return 1
         events = store.read_run(run_id)
 
-    serve(render(run_id, events), port=int(args.port))
+    serve(render(run_id, events), port=int(args.port), store=open_store(settings))
     return 0
 
 
@@ -218,7 +247,12 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--rubric", default="")
     run.add_argument("--run-id", default="")
     run.add_argument("--workers", type=int, default=8)
-    run.add_argument("--offline", action="store_true", help="replay the committed cache; never call a model")
+    run.add_argument(
+        "--offline", action="store_true", help="replay the committed cache; never call a model"
+    )
+    run.add_argument(
+        "--no-adk", action="store_true", help="bypass the ADK topology (fallback path)"
+    )
     run.add_argument("--live", action="store_true", help="call Vertex AI; costs money")
     run.add_argument("--open-docket", action="store_true")
     run.add_argument("--port", default="8080")

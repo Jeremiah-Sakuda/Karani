@@ -199,8 +199,14 @@ class ManagedModelArmor:
         return ScanResult(
             detected=flagged,
             detections=(
-                [Detection(pattern_name="model_armor_prompt_injection",
-                           matched_text="", char_start=0, char_end=0)]
+                [
+                    Detection(
+                        pattern_name="model_armor_prompt_injection",
+                        matched_text="",
+                        char_start=0,
+                        char_end=0,
+                    )
+                ]
                 if flagged
                 else []
             ),
@@ -210,7 +216,9 @@ class ManagedModelArmor:
         )
 
 
-def open_scanner(*, template: str = "", project: str = "", location: str = "us-central1") -> Scanner:
+def open_scanner(
+    *, template: str = "", project: str = "", location: str = "us-central1"
+) -> Scanner:
     """Managed Model Armor when configured and reachable; the local scanner otherwise.
 
     The choice is made once and the resulting detector name travels with every detection, so

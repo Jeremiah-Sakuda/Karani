@@ -85,7 +85,10 @@ def measure() -> dict:
     env = {**os.environ, "PYTHONPATH": str(REPO / "src")}
     tests = subprocess.run(
         [str(REPO / ".venv" / "bin" / "python"), "-m", "pytest", "-q", "--collect-only"],
-        capture_output=True, text=True, cwd=REPO, env=env,
+        capture_output=True,
+        text=True,
+        cwd=REPO,
+        env=env,
     )
     # `pytest -q --collect-only` emits one "path: N" line per test file and, in this
     # version, no summary total -- so the total is the sum, not a line to grep for.
@@ -98,7 +101,8 @@ def measure() -> dict:
     if collected == 0:
         raise RuntimeError(
             "pytest collected 0 tests; refusing to record that as a measurement.\n"
-            + tests.stdout[-800:] + tests.stderr[-400:]
+            + tests.stdout[-800:]
+            + tests.stderr[-400:]
         )
 
     return {
@@ -135,54 +139,77 @@ def main() -> int:
             "They are never quoted as deployed measurements."
         ),
         "submissions_parseable": entry(
-            m["corpus"]["submissions_parseable"], "count",
-            "counted by freezing every file the local source discovers"),
+            m["corpus"]["submissions_parseable"],
+            "count",
+            "counted by freezing every file the local source discovers",
+        ),
         "submissions_unparseable": entry(
-            m["corpus"]["submissions_unparseable"], "count",
-            "files that raised UnparseableSource during freeze"),
+            m["corpus"]["submissions_unparseable"],
+            "count",
+            "files that raised UnparseableSource during freeze",
+        ),
         "words_total": entry(
-            m["corpus"]["words_total"], "count", "whitespace-split over normalized rendition text"),
+            m["corpus"]["words_total"], "count", "whitespace-split over normalized rendition text"
+        ),
         "citable_spans_total": entry(
-            m["corpus"]["citable_spans_total"], "count",
-            "span registries minted from the frozen renditions"),
+            m["corpus"]["citable_spans_total"],
+            "count",
+            "span registries minted from the frozen renditions",
+        ),
         "planted_problems_total": entry(
-            m["plants"]["total"], "count", "enumerated in fixtures/MANIFEST.md"),
+            m["plants"]["total"], "count", "enumerated in fixtures/MANIFEST.md"
+        ),
         "planted_problems_found": entry(
-            m["plants"]["exhibited"], "count",
-            "each plant re-checked against live pipeline behaviour, not against the manifest"),
+            m["plants"]["exhibited"],
+            "count",
+            "each plant re-checked against live pipeline behaviour, not against the manifest",
+        ),
         "planted_problems_detail": entry(
-            m["plants"]["detail"], "map", "per-plant behavioural check"),
+            m["plants"]["detail"], "map", "per-plant behavioural check"
+        ),
     }
 
     metrics["golden_run"] = {
         "_note": "The committed reference run. Its event log is hand-constructed, not model output.",
-        "events": entry(m["golden_run"]["events"], "count", "folded from fixtures/golden-log.jsonl"),
+        "events": entry(
+            m["golden_run"]["events"], "count", "folded from fixtures/golden-log.jsonl"
+        ),
         "sheets": entry(m["golden_run"]["sheets"], "count", "evidence sheets produced by the fold"),
         "terminal_outcomes": entry(
-            m["golden_run"]["terminal_outcomes"], "map",
-            "counted by render(); all six must be non-zero (asserted by tests/test_replay.py)"),
+            m["golden_run"]["terminal_outcomes"],
+            "map",
+            "counted by render(); all six must be non-zero (asserted by tests/test_replay.py)",
+        ),
         "range_hash": entry(
-            m["golden_run"]["range_hash"], "sha256",
-            "hash over the content hashes of every consumed event"),
+            m["golden_run"]["range_hash"],
+            "sha256",
+            "hash over the content hashes of every consumed event",
+        ),
     }
 
     metrics["suite"] = {
         "tests_collected": entry(
-            m["tests_collected"], "count",
-            "pytest --collect-only, default markers (no credentials, no emulator, no model calls)"),
+            m["tests_collected"],
+            "count",
+            "pytest --collect-only, default markers (no credentials, no emulator, no model calls)",
+        ),
     }
 
     path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
 
     print(f"wrote {path.relative_to(REPO)}")
-    print(f"  corpus            {m['corpus']['submissions_parseable']} parseable + "
-          f"{m['corpus']['submissions_unparseable']} unparseable, "
-          f"{m['corpus']['words_total']:,} words, {m['corpus']['citable_spans_total']} spans")
+    print(
+        f"  corpus            {m['corpus']['submissions_parseable']} parseable + "
+        f"{m['corpus']['submissions_unparseable']} unparseable, "
+        f"{m['corpus']['words_total']:,} words, {m['corpus']['citable_spans_total']} spans"
+    )
     print(f"  planted problems  {m['plants']['exhibited']} of {m['plants']['total']} exhibited")
     for name, ok in m["plants"]["detail"].items():
         print(f"      {'yes' if ok else 'NO '}  {name}")
-    print(f"  golden run        {m['golden_run']['events']} events, "
-          f"{m['golden_run']['sheets']} sheets")
+    print(
+        f"  golden run        {m['golden_run']['events']} events, "
+        f"{m['golden_run']['sheets']} sheets"
+    )
     print(f"  tests             {m['tests_collected']} collected")
     print("\nDeployed and cost measurements untouched -- they stay 'not yet measured' until")
     print("an instrumented run on the deployed path produces them.")

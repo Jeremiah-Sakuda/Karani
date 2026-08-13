@@ -41,9 +41,25 @@ SUPPORTED_SUFFIXES = (".md", ".markdown", ".txt", ".docx", ".pdf")
 # has to catch the names that are certain.
 NON_SUBMISSION_STEMS = frozenset(
     {
-        "readme", "manifest", "license", "licence", "notice", "contributing",
-        "changelog", "rubric", "syllabus", "assignment", "instructions", "prompt",
-        "index", "notes", "template", "example", "sample", "gradebook", "roster",
+        "readme",
+        "manifest",
+        "license",
+        "licence",
+        "notice",
+        "contributing",
+        "changelog",
+        "rubric",
+        "syllabus",
+        "assignment",
+        "instructions",
+        "prompt",
+        "index",
+        "notes",
+        "template",
+        "example",
+        "sample",
+        "gradebook",
+        "roster",
     }
 )
 

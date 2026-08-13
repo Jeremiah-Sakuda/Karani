@@ -45,12 +45,12 @@ def rewrite_links(html: str) -> str:
     # silently does nothing when clicked -- which would be a worse lie than omitting it --
     # the edit control is replaced with a note saying where it does work.
     html = html.replace(
-        "<button type=\"submit\" style=\"margin-top:.5rem\">Record supersession</button>",
-        "<p class=\"sub\">Editing is live on the hosted docket and in <code>make demo</code>. "
+        '<button type="submit" style="margin-top:.5rem">Record supersession</button>',
+        '<p class="sub">Editing is live on the hosted docket and in <code>make demo</code>. '
         "This static export is read-only.</p>",
     )
     for suffix in ('">', '"'):
-        html = html.replace(f'.html/{suffix}', f'.html{suffix}')
+        html = html.replace(f".html/{suffix}", f".html{suffix}")
     return html.replace('student-s01"', 'student-s01.html"')
 
 
@@ -80,10 +80,12 @@ def main() -> int:
     for name, html in pages.items():
         fixed = rewrite_links(html)
         for sheet in run.sheets:
-            fixed = fixed.replace(f'href="student-{sheet.student_id}"',
-                                  f'href="student-{sheet.student_id}.html"')
-            fixed = fixed.replace(f'href="appeal-{sheet.student_id}"',
-                                  f'href="appeal-{sheet.student_id}.json"')
+            fixed = fixed.replace(
+                f'href="student-{sheet.student_id}"', f'href="student-{sheet.student_id}.html"'
+            )
+            fixed = fixed.replace(
+                f'href="appeal-{sheet.student_id}"', f'href="appeal-{sheet.student_id}.json"'
+            )
         (out / name).write_text(fixed, encoding="utf-8")
 
     (out / "artifact.json").write_text(run.to_json(), encoding="utf-8")
@@ -91,8 +93,10 @@ def main() -> int:
     print(f"wrote {len(pages) + 1} files to {out.relative_to(REPO)}")
     for name in sorted(pages):
         print(f"  {name:<26} {len(pages[name]):>7,} bytes")
-    print(f"\nrun {run_id} · {len(run.sheets)} sheets · "
-          f"{len(run.source_events)} events · range hash {run.range_hash[:16]}…")
+    print(
+        f"\nrun {run_id} · {len(run.sheets)} sheets · "
+        f"{len(run.source_events)} events · range hash {run.range_hash[:16]}…"
+    )
     return 0
 
 

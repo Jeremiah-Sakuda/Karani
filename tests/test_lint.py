@@ -27,8 +27,9 @@ from karani.validate.lint import (
 )
 
 CASES = json.loads(
-    (Path(__file__).resolve().parent.parent / "fixtures" / "adversarial" / "lint_cases.json")
-    .read_text(encoding="utf-8")
+    (
+        Path(__file__).resolve().parent.parent / "fixtures" / "adversarial" / "lint_cases.json"
+    ).read_text(encoding="utf-8")
 )
 
 # Any verdict token still visible after masking is a layer-4 failure, whatever the rules

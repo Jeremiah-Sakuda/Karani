@@ -32,10 +32,32 @@ SourceProjection = Literal["text", "docx", "pdf_text", "pdf_image", "unparseable
 # model's actual field set, so adding one is a test failure rather than a review comment.
 BANNED_FIELD_NAMES: frozenset[str] = frozenset(
     {
-        "score", "grade", "rank", "rating", "percentile", "points", "mark", "marks",
-        "level", "tier", "band", "quality", "assessment", "verdict", "judgement",
-        "judgment", "meets", "exceeds", "below", "proficiency", "mastery",
-        "extraction_confidence", "confidence", "letter_grade", "gpa", "weight",
+        "score",
+        "grade",
+        "rank",
+        "rating",
+        "percentile",
+        "points",
+        "mark",
+        "marks",
+        "level",
+        "tier",
+        "band",
+        "quality",
+        "assessment",
+        "verdict",
+        "judgement",
+        "judgment",
+        "meets",
+        "exceeds",
+        "below",
+        "proficiency",
+        "mastery",
+        "extraction_confidence",
+        "confidence",
+        "letter_grade",
+        "gpa",
+        "weight",
     }
 )
 

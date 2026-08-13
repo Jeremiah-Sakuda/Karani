@@ -126,18 +126,22 @@ def _parse(raw: str) -> dict:
     return json.loads(text)
 
 
-def gemma_triage_ollama(text: str, *, model: str = MODEL_TRIAGE, host: str = "http://localhost:11434") -> TriageDecision | None:
+def gemma_triage_ollama(
+    text: str, *, model: str = MODEL_TRIAGE, host: str = "http://localhost:11434"
+) -> TriageDecision | None:
     """The dev tier: a genuinely local Ollama daemon. Returns None if it is not running."""
     try:
         import urllib.error
         import urllib.request
 
-        payload = json.dumps({
-            "model": model,
-            "prompt": f"{TRIAGE_SYSTEM}\n\nDOCUMENT\n{text[:6000]}\n",
-            "stream": False,
-            "options": {"temperature": 0},
-        }).encode("utf-8")
+        payload = json.dumps(
+            {
+                "model": model,
+                "prompt": f"{TRIAGE_SYSTEM}\n\nDOCUMENT\n{text[:6000]}\n",
+                "stream": False,
+                "options": {"temperature": 0},
+            }
+        ).encode("utf-8")
         request = urllib.request.Request(
             f"{host}/api/generate", data=payload, headers={"Content-Type": "application/json"}
         )
@@ -157,8 +161,9 @@ def gemma_triage_ollama(text: str, *, model: str = MODEL_TRIAGE, host: str = "ht
     )
 
 
-def gemma_triage_vertex(text: str, *, project: str, location: str = "us-central1",
-                        model: str = MODEL_TRIAGE) -> TriageDecision | None:
+def gemma_triage_vertex(
+    text: str, *, project: str, location: str = "us-central1", model: str = MODEL_TRIAGE
+) -> TriageDecision | None:
     """The Vertex tier (KAR-623). Created and torn down within the hour, per KAR-008."""
     try:
         from google import genai
@@ -169,7 +174,8 @@ def gemma_triage_vertex(text: str, *, project: str, location: str = "us-central1
             model=model,
             contents=f"DOCUMENT\n{text[:6000]}\n",
             config=types.GenerateContentConfig(
-                system_instruction=TRIAGE_SYSTEM, temperature=0,
+                system_instruction=TRIAGE_SYSTEM,
+                temperature=0,
                 response_mime_type="application/json",
             ),
         )

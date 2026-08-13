@@ -135,6 +135,9 @@ def render(run_id: str, events: list[Event]) -> RenderedRun:
     excluded: list[dict[str, Any]] = []
     injection_flagged: set[str] = set()
     renditions: dict[str, dict[str, Any]] = {}
+    # Drafts awaiting a verdict. Never rendered from here -- only promoted out of it.
+    drafted: dict[str, dict[str, Any]] = {}
+    rejected_criteria: set[tuple[str, str]] = set()
 
     def student(sid: str) -> dict[str, Any]:
         return students.setdefault(sid, {"source_projection": "text", "criteria": set()})
@@ -169,18 +172,38 @@ def render(run_id: str, events: list[Event]) -> RenderedRun:
                 )
             )
 
-        elif event.step in (Step.OBSERVATION_DRAFTED, Step.OBSERVATION_ACCEPTED):
+        elif event.step is Step.OBSERVATION_DRAFTED:
+            # A draft is a proposal, not a finding. It is held aside and only reaches an
+            # evidence sheet if something later promotes it.
+            #
+            # This was a real defect: drafts were written straight into `current`, so an
+            # observation that the validator went on to REJECT still rendered on the sheet —
+            # a citation that failed set membership, or quoted text that is not in the span
+            # it names, presented to an instructor as evidence. The event log was correct
+            # throughout; the fold was reading it wrongly, which is the failure mode a
+            # "one log drives every artifact" design is supposed to make impossible.
+            obs = p.get("observation")
+            if isinstance(obs, dict):
+                drafted[str(obs["observation_id"])] = obs
+
+        elif event.step is Step.OBSERVATION_ACCEPTED:
             obs = p.get("observation")
             if isinstance(obs, dict):
                 oid = str(obs["observation_id"])
                 current[oid] = obs
+                drafted.pop(oid, None)
                 student(str(obs["student_id"]))["criteria"].add(str(obs["criterion_id"]))
-                if event.step is Step.OBSERVATION_ACCEPTED:
-                    outcome[oid] = (
-                        "accepted_first_attempt"
-                        if int(obs.get("attempts", 1)) <= 1
-                        else "accepted_after_retry"
-                    )
+                outcome[oid] = (
+                    "accepted_first_attempt"
+                    if int(obs.get("attempts", 1)) <= 1
+                    else "accepted_after_retry"
+                )
+
+        elif event.step is Step.OBSERVATION_REJECTED:
+            # Rejected drafts are discarded from the projection entirely. They remain in the
+            # log — every attempt is evidence — but an artifact that displayed them would be
+            # showing an instructor a claim the system itself refused.
+            rejected_criteria.add((sid, str(p.get("criterion_id", ""))))
 
         elif event.step is Step.NO_EVIDENCE_RECORDED:
             obs = p.get("observation")
@@ -202,9 +225,21 @@ def render(run_id: str, events: list[Event]) -> RenderedRun:
         elif event.step is Step.NEEDS_HUMAN_REVIEW:
             oid = str(p.get("observation_id", event.item_id))
             outcome[oid] = "needs_human"
-            if oid in current:
-                current[oid] = {**current[oid], "needs_human": True,
-                                "needs_human_reason": p.get("reason")}
+            # An escalated observation IS shown, flagged, because the instructor is being
+            # asked to look at it -- that is what escalation means. Promoted out of `drafted`
+            # if that is where it is, so the human sees the claim under review rather than an
+            # anomaly item pointing at nothing.
+            source = current.get(oid) or drafted.get(oid)
+            if source is not None:
+                current[oid] = {
+                    **source,
+                    "needs_human": True,
+                    "needs_human_reason": p.get("reason"),
+                }
+                drafted.pop(oid, None)
+                student(str(source.get("student_id", sid)))["criteria"].add(
+                    str(source.get("criterion_id", ""))
+                )
             anomalies.append(
                 AnomalyItem(
                     kind=str(p.get("anomaly_kind", "needs_human")),

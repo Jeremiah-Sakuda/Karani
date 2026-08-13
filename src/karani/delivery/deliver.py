@@ -61,16 +61,18 @@ def build_csv(run: RenderedRun, grades: dict[str, str] | None = None) -> str:
 
     for sheet in sorted(run.sheets, key=lambda s: s.student_id):
         needs_review = sum(1 for o in sheet.observations if o.get("needs_human"))
-        writer.writerow([
-            sheet.student_id,
-            # Empty unless the instructor wrote one. Never computed, never inferred, never
-            # defaulted.
-            grades.get(sheet.student_id, ""),
-            len(sheet.observations),
-            needs_review,
-            sheet.status,
-            "injection flagged" if sheet.injection_flagged else "",
-        ])
+        writer.writerow(
+            [
+                sheet.student_id,
+                # Empty unless the instructor wrote one. Never computed, never inferred, never
+                # defaulted.
+                grades.get(sheet.student_id, ""),
+                len(sheet.observations),
+                needs_review,
+                sheet.status,
+                "injection flagged" if sheet.injection_flagged else "",
+            ]
+        )
 
     return buffer.getvalue()
 
@@ -115,8 +117,10 @@ def deliver(
 
         result.events.append(
             Event.build(
-                run_id=run.run_id, step=Step.ARTIFACT_DELIVERED,
-                item_id=f"{sheet.student_id}::sheet", ts=now,
+                run_id=run.run_id,
+                step=Step.ARTIFACT_DELIVERED,
+                item_id=f"{sheet.student_id}::sheet",
+                ts=now,
                 payload={
                     "student_id": sheet.student_id,
                     "artifact": path.name,
@@ -134,7 +138,10 @@ def deliver(
 
     result.events.append(
         Event.build(
-            run_id=run.run_id, step=Step.ARTIFACT_DELIVERED, item_id=f"{run.run_id}::csv", ts=now,
+            run_id=run.run_id,
+            step=Step.ARTIFACT_DELIVERED,
+            item_id=f"{run.run_id}::csv",
+            ts=now,
             payload={
                 "artifact": csv_path.name,
                 "destination": result.destination,
@@ -186,8 +193,7 @@ def ratify(run: RenderedRun, student_ids: set[str]) -> dict[str, Any]:
         "run_id": run.run_id,
         "ratifying": sorted(s.student_id for s in targets),
         "still_needing_review": sorted(
-            s.student_id for s in targets
-            if any(o.get("needs_human") for o in s.observations)
+            s.student_id for s in targets if any(o.get("needs_human") for o in s.observations)
         ),
         "insufficient": sorted(s.student_id for s in targets if s.status == "INSUFFICIENT"),
     }
