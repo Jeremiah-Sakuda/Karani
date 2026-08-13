@@ -53,3 +53,6 @@ Thumbs.db
 
 # Local agent settings, not part of the project
 .claude/settings.local.json
+
+# Static docket export (regenerate with scripts/render_static_docket.py)
+out/

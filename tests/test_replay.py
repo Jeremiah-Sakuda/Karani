@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from karani.render import render
+from karani.render import TERMINAL_OUTCOMES, render
 from karani.store.local import read_jsonl_log
 
 from .factories import golden_events
@@ -128,6 +128,31 @@ def test_golden_run_exercises_each_observation_outcome(outcome):
     assert result.overview["terminal_outcomes"][outcome] >= 1, (
         f"the golden run produces no {outcome} outcome"
     )
+
+
+def test_all_six_terminal_outcomes_are_non_zero_in_the_golden_run():
+    """Property (§1.2, §8 beat 4): the divergence tour is not showing a zero.
+
+    The strongest claim this project makes is that ONE unattended run produces SIX visibly
+    different consequences. The class overview renders that as six counts side by side, and
+    the video points a camera at it.
+
+    This test exists because that panel shipped reading "injection flagged: 0" on a run where
+    the injection had been detected, flagged, and displayed with a chip two panels lower on
+    the same page. The count came from a map keyed by observation, and injection is a terminal
+    outcome of a *submission* — a flagged submission still produces observations, by design.
+    So the headline claim was quietly contradicting the table underneath it.
+
+    Asserting every outcome individually, so a regression names which one went to zero.
+    """
+    result = render("run-golden", golden_events())
+    counts = result.overview["terminal_outcomes"]
+
+    for name in TERMINAL_OUTCOMES:
+        assert counts.get(name, 0) > 0, (
+            f"the golden run reports 0 for '{name}'. The divergence tour is the central "
+            f"claim of the demo; a zero there is the claim failing on camera."
+        )
 
 
 def test_golden_run_shows_injection_and_abandonment():

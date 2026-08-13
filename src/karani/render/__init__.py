@@ -312,6 +312,19 @@ def render(run_id: str, events: list[Event]) -> RenderedRun:
         if value in outcome_counts:
             outcome_counts[value] += 1
 
+    # Injection is counted per *submission*, not per observation, and so it is counted here
+    # rather than falling out of the observation-keyed map above.
+    #
+    # This was a real defect: the divergence tour reported "injection flagged: 0" on a run
+    # where s07's payload had been detected, flagged, and shown with a chip two panels lower
+    # on the same page. The tour is the video's central claim -- six different consequences
+    # from one unattended run -- and it was contradicting the table underneath it.
+    #
+    # Injection does not appear in `outcome` because it is not a terminal state *of an
+    # observation*: a flagged submission still produces observations, by design (KAR-311).
+    # It is a terminal outcome of the submission, which is a different unit of work.
+    outcome_counts["injection_detected"] = len(injection_flagged)
+
     overview = {
         # Ordered by student ID. Not by anything that could be read as quality — see the
         # module docstring.
