@@ -87,3 +87,59 @@ Run service, Firestore, Cloud Scheduler) and explicit definitions for `KAR-601`�
 **Rejected:** loosening `compliance.py` to tolerate ranges. The check exists precisely to
 stop coverage from being asserted rather than enumerated; a checker edited to pass is worth
 less than no checker.
+
+---
+
+## D-004 — Package layout is `src/karani/<module>/`, not `src/<module>/`
+
+**Touches:** AGENTS.md repository layout
+**Date:** 2026-08-12
+
+AGENTS.md specifies `src/schema/`, `src/ingest/`, and so on. That is not importable as a
+package without putting `src/` itself on the path and claiming every one of those names in
+the global module namespace — `import schema` would collide with anything else called schema
+in the environment. Standard src-layout under a single `karani` package is used instead.
+Every module named in AGENTS.md exists, one level deeper.
+
+---
+
+## D-005 — `make demo` falls back to the reference run until the cache is recorded
+
+**Touches:** KAR-501
+**Date:** 2026-08-12
+
+The offline path replays recorded model responses and never fabricates one. `fixtures/cache/`
+cannot be recorded until the project has billing, so until then `make demo` explains the state
+and serves the committed reference run rather than exiting on a stack trace.
+
+**Rejected:** a stub client returning plausible observations. That would make the offline demo
+a *different system* from the one in the video — same interface, different provenance — and a
+judge who ran both and compared would be right to distrust everything else in the repository.
+
+`make record-cache` records a real run once and makes the offline path work permanently, for
+everyone. It is item 4 on the manual checklist.
+
+---
+
+## D-006 — Findings from an adversarial judging panel, and what they changed
+
+**Touches:** KAR-102, KAR-302, KAR-314, KAR-315, KAR-406, KAR-330
+**Date:** 2026-08-12
+
+A multi-judge panel scored the submission against the contest rubric and was given an explicit
+mandate to falsify its claims. It falsified three runtime invariants by execution and found a
+mandatory-stack gap. Every finding is fixed and each now has a test:
+
+| Finding | Was | Now |
+|---|---|---|
+| `store/firestore.py` did not exist | The deployed path would `ModuleNotFoundError` before writing an event | Implemented, with `create()`-only semantics and the collision check |
+| `T_max` did not bound liveness | `as_completed(timeout=None)`, then `ThreadPoolExecutor.__exit__`'s `shutdown(wait=True)` | The run owns its executor; `tests/test_join_liveness.py` blocks a real worker |
+| Circuit breaker crashed the run | Two `_abandon` calls minted one event ID with two payloads | Abandon-once, asserted |
+| Rejected observations rendered | `render()` wrote drafts into `current` with no rejection branch | Drafts are held aside and only promoted |
+| ADK was dead code | `run_with_adk()` had zero callers | On the execution path, with a reachability test |
+| Reference log claimed a model wrote it | `provenance.model_id = gemini-3.6-flash` on authored observations | `none (hand-constructed reference run)`, said on the page too |
+| Delivery had zero callers | The category-defining action was unreachable | `/ratify` route, button, and tests |
+
+**Kept from the panel's advice, and rejected:** it recommended integrating Veo or Lyria for the
+additional-model bonus (+0.4). Rejected — both would be gratuitous in a grading-evidence tool,
+and gratuitous integration costs more in Architectural Discipline than the bonus returns.

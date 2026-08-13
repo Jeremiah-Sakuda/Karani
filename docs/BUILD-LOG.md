@@ -69,3 +69,53 @@ is the correct state for it today.
    enumerated" pattern §2's preamble exists to forbid.
 
 **Requirements touched:** KAR-001, KAR-002, KAR-005, KAR-006, KAR-007, KAR-008, KAR-020
+
+### 2026-08-12 — The whole build, and a panel that falsified it
+
+**Prompt (verbatim):**
+> Here we have a new repo and project. I want you to complete it end to end, ending wth a final list of things I need to do by hand.  This is for this hackathon, so at the end, run a judging panel against these rules, and implement any improvements that are worthwhile to maximize winning probability
+
+**Course corrections:**
+- > "You should have access to the google cloud cli, use the asili project for this"
+- > "The repo is brand new at https://github.com/Jeremiah-Sakuda/Karani I want frequent commits as you proceed, do not list claude as a contributor or co author of any commits"
+
+**Outcome:** Phases 0 through 6 built and pushed: the spine, the fixtures, the analysis path,
+the docket, delivery, the deploy scripts, both architecture diagrams, the README, the
+recording run-book, and the submission drafts. 154 tests; all five CI steps green.
+
+The session's real value was the closing judging panel. Seven judges scored the submission
+against the contest rubric with a mandate to falsify its claims, and they earned their keep:
+they proved three runtime invariants false *by execution* and found that the deployed path
+could not start at all, because `store/firestore.py` did not exist while `deploy.sh` set
+`KARANI_STORE_BACKEND=firestore`. Every manual step could have been performed perfectly and
+the Cloud Run Job would still have died before writing one event.
+
+Three defects shared a shape worth naming: **working code with no caller.** ADK, Gemma triage,
+and delivery were each well-implemented and unreachable. A reader checking "is ADK used?"
+finds a file that uses ADK; only a grep for callers reveals that nothing invokes it. The
+mandatory Agent Framework requirement was being satisfied by a module the program never ran.
+
+Nothing is measured. `docs/metrics.json` carries offline measurements labelled `surface:
+local` and leaves every deployed and cost figure at "not yet measured", because the project
+has no billing and no model call has ever executed.
+
+**Key decisions:**
+
+1. **Analysis pinned to `gemini-3.6-flash` after finding the PRD's model does not exist.**
+   Rejected `gemini-3.1-pro-preview`, the intuitive repair once 3.5 Pro turned out to be
+   fictional: it satisfies the "Pro tier" intent and fails the contest's "3.5 or newer" bar,
+   and only one of those is graded pass/fail.
+
+2. **The offline demo refuses to fabricate model output.** Rejected a stub client that would
+   have made `make demo` succeed today. A stubbed response makes the offline demo a different
+   system from the one in the video, and a judge who ran both and compared would be right to
+   distrust everything else in the repository. It explains itself and falls back instead.
+
+3. **The panel's Veo/Lyria recommendation was rejected.** It offered +0.4 of bonus for
+   integrating additional Google AI models. Both would be gratuitous in a grading-evidence
+   tool, and gratuitous integration costs more in Architectural Discipline than the bonus
+   returns.
+
+**Requirements touched:** KAR-001, 002, 005, 006, 007, 008, 020, 101, 102, 103, 104, 105,
+201, 202, 203, 204, 206, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 313, 314,
+315, 316, 318, 319, 330, 401, 402, 404, 405, 406, 412, 413, 501, 502, 503, 504, 505, 506
