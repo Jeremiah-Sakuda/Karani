@@ -41,12 +41,13 @@ does not have to be real yet.
 ./scripts/bootstrap_gcp.sh asili-xprize-2026
 ```
 
-**Read this before running it.** `bootstrap_gcp.sh` creates a Firestore `(default)` database in
-`asili-xprize-2026`, and **creating a Firestore database is effectively irreversible** — you
-cannot delete it, and it fixes the project's Firestore mode permanently. That project currently
-has no Firestore and three live Cloud Run services (`asili-agents`, `asili-web`,
-`eleza-gemini-proxy`). Karani never touches those, and `teardown.sh` only removes resources
-named `karani-*`. But the Firestore decision is one-way, so make it deliberately.
+**Read this before running it.** `bootstrap_gcp.sh` creates **two named Firestore databases**
+in `asili-xprize-2026` — `karani-events` and `karani-grades` — and **creating a Firestore
+database is effectively irreversible**. That project currently has no Firestore and three live
+Cloud Run services (`asili-agents`, `asili-web`, `eleza-gemini-proxy`). Karani never touches
+those, and `teardown.sh` only removes resources named `karani-*`. Named databases rather than
+`(default)` both because the IAM condition is a string match on the resource name and because
+it leaves `(default)` free for anything else that project ever wants.
 
 Then start the clock:
 
@@ -56,9 +57,10 @@ Then start the clock:
 
 ## 2. Deploy the Firestore rules — Firebase CLI, not gcloud
 
-There is no `gcloud firestore rules` command. The rules guard the **browser** write path to
-`grades/`; the custom IAM role guards the **service-account** path. Neither substitutes for the
-other, and skipping this leaves `grades/` writable from a browser session.
+There is no `gcloud firestore rules` command. The rules guard the **browser** write path; the
+IAM condition plus the separate database guard the **service-account** path. Neither
+substitutes for the other — a service account never evaluates rules, and a browser session is
+not covered by IAM conditions on service accounts.
 
 ```bash
 npm i -g firebase-tools && firebase login

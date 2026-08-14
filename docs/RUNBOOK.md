@@ -6,9 +6,8 @@ green are marked — a run-book that pretends everything is ready is a run-book 
 it isn't at 2 a.m. on recording night.
 
 **Hard cap 4:00. Target 3:45.** Every number spoken on camera must exist in
-[metrics.json](metrics.json) first. As of this commit that file is entirely "not yet
-measured", so **no number can be spoken yet**. Recording cannot happen before an instrumented
-run has populated it.
+[metrics.json](metrics.json) first. Validation numbers are now measured from a live run; cost,
+deployed timings and the friction figures are not, and must not be spoken.
 
 ---
 
@@ -16,19 +15,21 @@ run has populated it.
 
 | Precondition | State | How to make it green |
 |---|---|---|
-| Billing on the deploy project | ❌ **not green** | `gcloud billing projects link asili-61171 --billing-account=<ID>` |
-| Application default credentials | ❌ **not green** | `gcloud auth application-default login` |
-| Pinned model IDs resolve | ⏸ untested | `karani preflight` — fails loudly on a missing model |
-| Scheduler history ≥7 nightly runs | ❌ **not green** | `./scripts/deploy.sh <project> --scheduler-only` — **do this first, today**; the clock cannot be recovered later |
-| Golden run cached | ✅ green | `fixtures/golden-log.jsonl` is committed |
-| Docket serving the golden run | ✅ green | `make docket-golden` |
-| Scale-run overview frame | ❌ **not green** | needs one deployed run over `fixtures/scale/` |
-| s07 anomaly item present | ✅ green | verified by the e2e suite |
-| One un-ratified sheet for the hero edit | ✅ green | any sheet in the golden run |
+| Billing on the deploy project | ✅ green | `asili-xprize-2026` |
+| Credentials for live Vertex calls | ✅ green | Karani borrows the gcloud CLI token when ADC is absent |
+| Pinned model IDs resolve | ✅ green | both verified against live Vertex AI |
+| Recorded run + offline cache | ✅ green | 187 responses committed; `make demo` replays 21/21 |
+| Validation numbers measured | ✅ green | 90.5% first-attempt, 6.8% entailment disagreement |
+| s07 injection catch | ✅ green | fires on the live run |
+| One escalated sheet for the hero edit | ✅ green | s01 and s02 both have escalations in the recorded run |
+| **Grades boundary verified on the deployed path** | ❌ **not green** | `pytest -m deployed` — **beat 7 is blocked on this**; see below |
+| Scheduler history ≥7 nightly runs | ❌ **not green** | `./scripts/deploy.sh asili-xprize-2026 --scheduler-only` — the clock cannot be recovered later |
+| Cloud Run Job + hosted docket | ❌ **not green** | `./scripts/deploy.sh asili-xprize-2026` |
+| Scale-run overview frame | ❌ **not green** | one deployed run over `fixtures/scale/` |
+| Cost figure | ❌ **not green** | read the billing console; do not estimate |
 | Delivery folder empty | ⏸ manual | empty it so the drop is visible on camera |
-| metrics.json populated | ❌ **not green** | one instrumented run; **blocks every spoken number** |
 
-Staging command once the above are green:
+Staging command for the local beats:
 
 ```bash
 make docket-golden
