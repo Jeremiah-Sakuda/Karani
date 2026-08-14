@@ -97,18 +97,37 @@ not cut it to save time — a demo where the agent is never wrong is a demo nobo
 
 ## Beat 7 — 2:40–2:55 · the denial
 
+**Film the CREATE, not a `.set()`.** This is the single most important note in the run-book.
+
+An external review found that the original beat would have demonstrated the wrong operation.
+The pipeline role grants `datastore.entities.create`; a `.set()` on an existing document ID is
+an upsert that can be denied for wanting *update* permission — so it would show
+`PERMISSION_DENIED` on camera while the operation the role actually authorises still worked.
+A denial that proves nothing is worse than no denial, because it is believed.
+
 **On screen, live console, not a screenshot:**
 
 ```bash
 gcloud config set account karani-analysis@<project>.iam.gserviceaccount.com
-# attempt a write to grades/ -- expect PERMISSION_DENIED
+
+# The operation datastore.entities.create authorises: a FRESH document in the grades database.
+python - <<'PY'
+from google.cloud import firestore
+db = firestore.Client(project="<project>", database="karani-grades")
+db.collection("grades").document("probe-live-demo").create({"grade": "A"})
+PY
+# expect: PERMISSION_DENIED
 ```
 
-**Say:** *"That's not a policy. That's IAM."*
+**Say:** *"That's not a policy. That's IAM — and grades aren't even in the same database."*
 
-**Property:** the boundary is enforced, not asserted. Until this passes on the deployed path,
-the language discipline holds: say *"no field can carry a verdict into any downstream system"*
-— never "structurally impossible".
+**Precondition:** `pytest -m deployed` must pass first. It runs this exact attack plus a
+create in a collection nobody has named, because the boundary is the database binding rather
+than a collection's spelling.
+
+**Property:** the boundary is enforced, not asserted. Until the deployed tests pass, the
+language discipline holds: say *"no field can carry a verdict into any downstream system"* —
+never "structurally impossible".
 
 ## Beat 8 — 2:55–3:15 · ratify, and it lands where they already work
 

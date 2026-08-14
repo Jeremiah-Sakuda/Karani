@@ -17,6 +17,19 @@ that cannot be recovered by working harder later.
 
 ---
 
+## 0. Re-run bootstrap before anything else — the IAM model changed
+
+An external review found the grades boundary did not hold: the append-only role was bound at
+project scope, and `datastore.entities.create` cannot be scoped to a collection. Grades now
+live in a **separate Firestore database** with the events binding IAM-conditioned.
+
+If you already ran `bootstrap_gcp.sh` before this change, run it again — it is idempotent, and
+it now creates two databases and binds with a condition.
+
+**Do not record the `PERMISSION_DENIED` beat until `pytest -m deployed` passes.** The old beat
+would have filmed a `.set()`, which can be denied for the wrong reason while a `.create()`
+still succeeds — a denial that proves nothing.
+
 ## 1. Start the Scheduler execution-history clock — **tonight**
 
 KAR-410's acceptance criterion is *"execution history shows ≥7 nightly runs by recording day."*
