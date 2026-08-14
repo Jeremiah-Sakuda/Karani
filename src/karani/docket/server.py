@@ -188,13 +188,23 @@ def build_app(rendered: RenderedRun, store: Any | None = None) -> FastAPI:
             s.student_id for s in run.sheets
         }
 
+        # Grades are read from the instructor's own Firestore database, which lives outside
+        # every pipeline identity's IAM reach. If it is unreachable -- no credentials, not
+        # deployed, or the docket's own service account correctly denied -- this returns an
+        # empty map and the CSV exports blank grade cells. That is the correct degraded
+        # behaviour: Karani exports the blank rather than deriving a value.
+        from karani.grades import open_grades_store
+
+        grades_store = open_grades_store(settings.project)
+        try:
+            grades = grades_store.read_all() if grades_store else {}
+        except Exception:  # noqa: BLE001 - denied or unreachable both mean "no grades to export"
+            grades = {}
+
         result = deliver(
             run,
             out_dir=REPO_ROOT / "out" / run.run_id / "delivered",
-            # Read from grades/ under the caller's own credentials. Empty here because no
-            # pipeline identity may read or write that collection; the deployed docket passes
-            # the instructor's session-scoped values.
-            grades=state.get("grades") or {},
+            grades=grades,
             drive_folder_id=settings.delivery_drive_folder_id,
             ratified=targets,
         )

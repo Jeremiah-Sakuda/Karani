@@ -81,6 +81,24 @@ EXTRACTOR_VERSIONS: Final[dict[str, str]] = {
     "pdf": "pdf1",
 }
 
+# ---------------------------------------------------------------------------------------
+# Firestore databases (KAR-102, KAR-312)
+# ---------------------------------------------------------------------------------------
+# TWO databases, not two collections in one, and the separation is a security boundary
+# rather than an organisational preference.
+#
+# `datastore.entities.create` cannot be scoped to a collection. A role granting it over one
+# database authorises creating a document anywhere in that database, and the Firestore server
+# SDK is authorised by IAM alone -- Security Rules are not evaluated for server clients. So
+# events and grades sharing a database means any identity that can append an event can create
+# a grade, whatever the rules say.
+#
+# Named databases rather than `(default)`, because the IAM condition that enforces this is a
+# CEL string match on the resource name, and `projects/P/databases/(default)` embeds
+# parentheses into an expression language that has its own opinions about them.
+EVENTS_DATABASE: Final[str] = os.environ.get("KARANI_EVENTS_DB", "karani-events")
+GRADES_DATABASE: Final[str] = os.environ.get("KARANI_GRADES_DB", "karani-grades")
+
 StoreBackend = Literal["local", "emulator", "firestore"]
 ModelBackend = Literal["cache", "vertex"]
 

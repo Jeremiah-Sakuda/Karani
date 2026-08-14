@@ -28,18 +28,23 @@ validates every citation four ways, flags the criteria where it could find nothi
 what it is not sure about, and assembles per-student evidence sheets plus a class overview. In
 the morning the instructor ratifies feedback in batch and writes every grade personally.
 
-The grades go into a Firestore collection that **no pipeline service account can write to**.
-That boundary is enforced twice — by Firestore rules on the browser path and by a custom IAM
-role granting `create` and `get` on the service-account path — because a service account never
-evaluates Firestore rules and an emulator never evaluates IAM, so each mechanism is invisible
-to the other's test.
+The grades go into a **separate Firestore database** that no pipeline identity is bound to at
+all.
 
-*Verification status, stated precisely:* the rules, the custom role, and the negative-test
-matrix are in this repository, and the matrix is read directly by the test suite. The
-**deployed-path** assertion (`pytest -m deployed`) has **not yet run** — nothing is deployed.
-Until it has, the language discipline in `AGENTS.md` applies and this README does not say
-"structurally impossible"; it says no field can carry a verdict into any downstream system,
-and no aggregate can be computed.
+That wording is exact, and it was not always. An earlier version put grades in a separate
+*collection* on the same database, which sounds equivalent and is not:
+`datastore.entities.create` cannot be scoped to a collection, and the Firestore **server SDK
+does not evaluate Security Rules** — server clients are authorised by IAM alone. So a shared
+database meant every identity that could append an event could create a grade, and the rules
+file was protecting the browser path only. An external review caught it. See
+[docs/FINDINGS.md](docs/FINDINGS.md).
+
+*Verification status, stated precisely:* the separate database, the IAM condition, the rules,
+and the negative-test matrix are all in this repository, and the matrix is read directly by the
+test suite. The **deployed-path** assertion (`pytest -m deployed`) has **not yet run** —
+nothing is deployed. Until it has, the language discipline in `AGENTS.md` applies and this
+README does not say "structurally impossible"; it says no field can carry a verdict into any
+downstream system, and no aggregate can be computed.
 
 ## What makes this different from an auto-grader
 
@@ -64,11 +69,11 @@ this repository.
 | Every evidence observation cites a real span | Referential check = set membership against the span registry; positional identity; `quote in span_text` string assert |
 | Every cited claim is checked for support | 100% entailment on Flash; **disagreements route to `NEEDS_HUMAN`, never retry** |
 | Absence of evidence is representable, not an error | `kind: no_evidence` + `searchNotes`; validator rule = "cited XOR no_evidence"; excluded from the retry loop entirely — **this is what makes the attempt cap survivable** |
-| No verdict can enter a downstream system | `grades/` is IAM-bounded; no field on an observation ranks, scores, or orders the work; process fields describe the system's confidence in its own bookkeeping, never the submission's quality; `no_evidence` + `searchNotes` is a claim about the **search**, not the work; the delivery payload is rendered sheets + the instructor's own ratified CSV — the pipeline contributes no verdict-bearing field to either |
+| No verdict can enter a downstream system | **Grades live in a separate Firestore database** that no pipeline identity is bound to, and the append-only role carries an IAM condition naming the *events* database. Both halves are load-bearing: `datastore.entities.create` cannot be scoped to a collection, and the Firestore server SDK is authorised by IAM alone — Security Rules are never evaluated for server clients, so a shared database would let any identity that can append an event create a grade. The deployed test attempts a **fresh-document create**, which is the operation that permission actually authorises; no field on an observation ranks, scores, or orders the work; process fields describe the system's confidence in its own bookkeeping, never the submission's quality; `no_evidence` + `searchNotes` is a claim about the **search**, not the work; the delivery payload is rendered sheets + the instructor's own ratified CSV — the pipeline contributes no verdict-bearing field to either |
 | No verdict reaches the screen | Deterministic verdict lint over **generated text**, masking with a visible *"[verdict token redacted — Karani will not display a grade]"*. **`citation.quote` is flagged, never masked** — a chip marks the observation for review — unless the source span is itself injection-flagged, in which case the quote is masked with the injection notice. Rendered artifacts carry no ordinal signal: no quality-proxy ordering, no colour-coding, no consistent positive/negative iconography |
 | Bounded autonomy | Attempt cap 2 at observation granularity, then `NEEDS_HUMAN`; every attempt logged; run-level circuit breaker (`maxTotalAttempts`, `maxWallClock` → `RunAborted`) |
 | Idempotent execution | Deterministic event IDs + `create()`; content-hash comparison on collision raises `EventIdCollision`; durable shared response cache |
-| No run hangs | Dispatcher wall-clock deadline `T_max`; units lacking a terminal event get `TaskAbandoned{reason: join_timeout}` written **by the dispatcher** and flow into `excluded[]` |
+| No run hangs | Two bounds, because one is not enough. **The logical run:** dispatcher wall-clock deadline `T_max`; units lacking a terminal event get `TaskAbandoned{reason: join_timeout}` written **by the dispatcher** and flow into `excluded[]`. **The process:** Python cannot interrupt a running thread and `ThreadPoolExecutor` joins its workers at interpreter exit, so a permanently blocked worker would hold a finished job open past every application deadline — the entrypoint calls `hard_exit` once the artifact is durable. Tested by spawning a real subprocess whose worker blocks forever and asserting the **OS process** is gone inside a wall-clock bound |
 | Divergence is detectable, not assumed | `sourceEvents[]` + range hash on every artifact; `karani verify` re-folds and compares |
 | Least privilege | Per-stage SAs: ingest (source read + nothing else), analysis (Vertex invoke + `events` create only), render (read `events` + write `artifacts`), delivery (write one Drive folder + nothing else); **no SA writes `grades/`**; a negative-test matrix asserts `PERMISSION_DENIED` for every forbidden operation |
 

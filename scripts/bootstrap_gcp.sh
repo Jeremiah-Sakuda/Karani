@@ -67,12 +67,30 @@ if command -v python3 >/dev/null && [[ -f src/karani/cli.py ]]; then
   }
 fi
 
-# --- Firestore -------------------------------------------------------------------------
-say "Firestore"
-if ! have firestore databases describe --database='(default)'; then
-  gcloud firestore databases create --location="$REGION" --type=firestore-native
-fi
-gcloud firestore databases update --database='(default)' --delete-protection 2>/dev/null || true
+# --- Firestore: TWO databases, and the separation is the security boundary --------------
+#
+# `datastore.entities.create` cannot be scoped to a collection. Granting it over a database
+# authorises creating a document ANYWHERE in that database, and the Firestore server SDK is
+# authorised by IAM alone -- Security Rules are not evaluated for server clients. So events
+# and grades in one database means any identity that can append an event can create a grade.
+#
+# This was a real defect in this script: the role below used to be bound at project scope with
+# --condition=None, which made "no pipeline identity can write grades/" false on the deployed
+# path while every local test still passed.
+say "Firestore databases"
+EVENTS_DB="${KARANI_EVENTS_DB:-karani-events}"
+GRADES_DB="${KARANI_GRADES_DB:-karani-grades}"
+
+for db in "$EVENTS_DB" "$GRADES_DB"; do
+  if ! gcloud firestore databases describe --database="$db" >/dev/null 2>&1; then
+    gcloud firestore databases create --database="$db" \
+      --location="$REGION" --type=firestore-native
+    echo "created $db"
+  else
+    echo "$db exists"
+  fi
+  gcloud firestore databases update --database="$db" --delete-protection 2>/dev/null || true
+done
 
 # Firestore security rules are deployed by the Firebase CLI, not by gcloud -- there is no
 # `gcloud firestore rules` command group. An earlier version of this script called one and
@@ -128,20 +146,55 @@ create_sa karani-render   "Karani render (event read + artifact write)"
 create_sa karani-delivery "Karani delivery (one Drive folder, write only)"
 create_sa karani-docket   "Karani docket service"
 
+# Unconditional binding, for roles that carry no Firestore reach.
 bind() {
   gcloud projects add-iam-policy-binding "$PROJECT" \
     --member="serviceAccount:$1@${PROJECT}.iam.gserviceaccount.com" \
     --role="$2" --condition=None >/dev/null
 }
-bind karani-analysis "projects/$PROJECT/roles/karaniAppendOnly"
+
+# Firestore binding, CONDITIONED on the events database.
+#
+# This condition is the thing that makes the grades boundary real. Without it the append-only
+# role authorises `db.collection("grades").document(uuid).create({...})`, because
+# datastore.entities.create is database-wide and Security Rules do not apply to server SDKs.
+bind_events_db() {
+  gcloud projects add-iam-policy-binding "$PROJECT" \
+    --member="serviceAccount:$1@${PROJECT}.iam.gserviceaccount.com" \
+    --role="projects/$PROJECT/roles/karaniAppendOnly" \
+    --condition="expression=resource.name.startsWith('projects/${PROJECT}/databases/${EVENTS_DB}'),title=karani-events-db-only,description=Append-only access is limited to the events database; the grades database is unreachable from any pipeline identity." \
+    >/dev/null
+}
+
+bind_events_db karani-analysis
+bind_events_db karani-render
+bind_events_db karani-docket
 bind karani-analysis "roles/aiplatform.user"
-bind karani-render   "projects/$PROJECT/roles/karaniAppendOnly"
-bind karani-docket   "projects/$PROJECT/roles/karaniAppendOnly"
 bind karani-ingest   "roles/storage.objectViewer"
 
-# Deliberately NOT bound anywhere: any role granting datastore.entities.update or .delete,
-# and any role granting write access to grades/. If a deploy fails for want of a permission,
-# stop and say so -- do not widen a scope to unblock it.
+# Deliberately NOT bound anywhere: any role granting datastore.entities.update or .delete;
+# any Firestore role without the events-database condition; any access at all to
+# "$GRADES_DB". The instructor's authenticated session is the only writer of grades, and it
+# authenticates as a person rather than as a service account.
+#
+# If a deploy fails for want of a permission, stop and say so -- do not widen a scope to
+# unblock it. A failing deploy with correct permissions beats a passing deploy with wrong ones.
+
+say "Verifying the grades boundary actually holds"
+cat <<EOF
+The binding above is conditioned on:
+  projects/${PROJECT}/databases/${EVENTS_DB}
+
+Grades live in a different database (${GRADES_DB}) that no pipeline identity is bound to at
+all. Prove it before recording the denial beat -- a beat that films the wrong operation
+"proves" a boundary the policy does not enforce:
+
+  GOOGLE_CLOUD_PROJECT=${PROJECT} .venv/bin/pytest -m deployed -v
+
+The decisive test attempts a FRESH-DOCUMENT create against the grades database, which is
+exactly the operation datastore.entities.create authorises. A .set() on a fixed document ID
+is not the same test and can pass while a create still succeeds.
+EOF
 
 # --- Model Armor -----------------------------------------------------------------------
 say "Model Armor template"

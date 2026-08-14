@@ -12,6 +12,24 @@
 #   gcloud iam roles create karaniAppendOnly --project=$PROJECT \
 #     --file=deploy/iam/karani-append-only.yaml
 
+# ---------------------------------------------------------------------------------------
+# THIS ROLE IS NOT SUFFICIENT ON ITS OWN, AND THAT WAS A REAL DEFECT.
+#
+# `datastore.entities.create` is not scoped to a collection. A binding of this role at
+# PROJECT scope with no condition authorises creating a document ANYWHERE in the project's
+# Firestore -- including `grades/`. The Firestore server SDK does not evaluate Security
+# Rules; server clients are authorised by IAM alone. So for a period this repository claimed
+# "no pipeline identity can write grades/" while the provisioning script granted exactly the
+# permission needed to create one.
+#
+# The claim is now true because grades live in a SEPARATE Firestore database and this role is
+# bound with an IAM condition restricting it to the events database. Both halves are load-
+# bearing: the condition without the separate database would still be one typo from failure,
+# and the separate database without the condition would still be reachable.
+#
+# See bootstrap_gcp.sh's bind() and tests/test_iam_boundary.py's fresh-document create test.
+# ---------------------------------------------------------------------------------------
+
 title: "Karani append-only event writer"
 description: >
   Create and read Firestore entities. No update, no delete. Held by every pipeline service

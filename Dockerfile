@@ -31,4 +31,7 @@ USER karani
 EXPOSE 8080
 
 # Default: the docket service. The Job overrides this with `run --live`.
-CMD ["python", "-m", "karani.cli", "docket", "--golden", "fixtures/recorded-run.jsonl", "--port", "8080"]
+# No --golden: the docket serves the latest run from whatever store is configured, which
+# on Cloud Run is Firestore -- so the hosted UI shows what the nightly Job produced. The
+# committed recorded run is the fallback when the store has no runs yet.
+CMD ["python", "-m", "karani.cli", "docket", "--port", "8080"]

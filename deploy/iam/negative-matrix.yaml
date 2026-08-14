@@ -39,11 +39,19 @@ service_accounts:
           emulator does not evaluate IAM at all.
       - operation: firestore.delete_event
         why: same
-      - operation: firestore.write_grade
+      - operation: firestore.create_grade_fresh_document
         why: >
-          KAR-312. This is the denial filmed for the video. The analysis identity is the one
-          a viewer would most expect to be able to grade, which is why it is the one shown
-          being refused.
+          KAR-312, and the denial filmed for the video. Stated as CREATE-a-fresh-document
+          rather than "write a grade" because that is the operation the granted permission
+          would actually authorise: datastore.entities.create cannot be scoped to a
+          collection, and the Firestore server SDK is authorised by IAM alone. An earlier
+          version of this matrix said "write grades/" and the test used .set() on a fixed
+          document ID -- which can be denied for requiring update permission while a create
+          still succeeds. The green check was measuring the wrong thing.
+      - operation: firestore.create_anything_in_grades_database
+        why: >
+          The boundary is the database binding, not a collection name. An identity blocked
+          from grades/ but able to create in grades_v2/ has been blocked from a string.
       - operation: storage.write_object
         why: analysis produces events, not files
       - operation: drive.files_create

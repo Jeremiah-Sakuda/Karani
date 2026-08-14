@@ -270,3 +270,70 @@ special-casing anywhere in the pipeline.
 from the Cloud Billing console rather than derived from token counts — `gemini-3.6-flash` bills
 thinking tokens (222 on a 32-token prompt in one smoke test), so a token-arithmetic estimate
 would understate it. It stays "not yet measured" until someone reads the console.
+
+
+### 2026-08-13 — Two invariants that were false, found by an external review
+
+An external judge reviewed the repository against the contest rubric and falsified two claims
+this README made. Both were real, both are fixed, and both were the kind of defect that local
+tests cannot catch because local tests do not evaluate IAM and do not observe process exit.
+
+**1. The grades boundary did not exist on the deployed path.**
+
+The claim was "no pipeline identity can write `grades/`". The provisioning script bound the
+custom append-only role at **project scope with `--condition=None`**, and that role grants
+`datastore.entities.create`.
+
+`datastore.entities.create` cannot be scoped to a collection. It authorises creating a
+document anywhere in the database. And the Firestore **server SDK does not evaluate Security
+Rules** — server clients are authorised by IAM alone, so `deploy/firestore.rules` was
+protecting the browser path only. A pipeline service account could have run
+`db.collection("grades").document(uuid).create({"grade": "A"})` and succeeded.
+
+Worse, **the test could not have caught it.** It attempted `grades.document("s01").set({...})`
+and expected `PermissionDenied`. A `.set()` with no precondition is an upsert and can require
+*update* permission — which the role withholds — so it would be denied for a reason unrelated
+to the boundary under test, while a `.create()` on a fresh document still succeeded. A green
+check measuring the wrong operation.
+
+*Fixed:* grades moved to a **separate Firestore database** (`karani-grades`) that no pipeline
+identity is bound to at all, and the append-only binding now carries an IAM condition naming
+the events database. The deployed test attempts a **fresh-document create**, plus a create in a
+collection nobody has ever named — because the boundary is the database binding, not a
+collection's spelling.
+
+*The part that mattered most:* this had to be fixed **before** recording the
+`PERMISSION_DENIED` camera beat. Filming the old operation would have shown a denial that
+proved nothing and implied a guarantee the policy did not enforce.
+
+**2. `T_max` bounded the run but not the process.**
+
+Karani had already fixed one timeout defect and believed the liveness claim held. It did not,
+and the reason is documented Python behaviour rather than a bug:
+
+- `shutdown(wait=False, cancel_futures=True)` cancels *pending* futures. A **running** future
+  cannot be cancelled — there is no way to interrupt a thread from outside it.
+- `ThreadPoolExecutor` registers an atexit hook that joins its workers, so the interpreter
+  will not exit while one is blocked.
+
+The existing tests used a worker that slept and then returned, which is the realistic case and
+not the hard one. With a worker that **never** returns, `run_pipeline` completes perfectly —
+`TaskAbandoned` written, artifact rendered — and the process sits there until Cloud Run's task
+timeout kills it.
+
+*Fixed:* `karani/runtime.py` provides `hard_exit`, called by the entrypoint once the artifact
+is durable. It lives outside the library because nothing importable into someone else's process
+should call `os._exit`. Verified by mutation: with `hard_exit` disabled the subprocess test
+times out at 25 seconds against a 2-second `T_max`; with it, the process exits cleanly.
+
+**A detail worth keeping.** The suite now leaves blocked worker threads alive in pytest's own
+interpreter, because `test_join_liveness.py` blocks them deliberately and Python cannot reap
+them. That is not a test-hygiene problem to paper over — it is the production failure mode,
+reproduced in miniature, in the very process asserting it does not happen.
+
+**Also corrected from the same review:** the hosted docket was serving a committed fixture
+while the Cloud Run Job wrote Firestore — two disconnected chains presented as one narrative.
+The docket now folds the latest run from the configured store, with the committed run as an
+explicitly-labelled fallback. And ratification now reads grades from the instructor's own
+database rather than an empty dict, so "the instructor enters the grade and Karani exports it
+without ever generating it" is a path that runs rather than a sentence.

@@ -148,13 +148,13 @@
   <!-- ============ grades: the negative space ============ -->
   <text class="sect" x="880" y="486">THE NEGATIVE SPACE</text>
   <rect x="880" y="490" width="210" height="132" rx="6" fill="#ffffff" stroke="#7a7a7a" stroke-width="2" stroke-dasharray="7 5"/>
-  <text class="lbl" x="894" y="514">grades/</text>
-  <text class="mono" x="894" y="533">instructor session only</text>
-  <text class="mono" x="894" y="548">history/ is create-only</text>
-  <text class="mono" x="894" y="570">every pipeline SA is</text>
-  <text class="mono" x="894" y="585">DENIED — asserted on the</text>
-  <text class="mono" x="894" y="600">deployed path, not just</text>
-  <text class="mono" x="894" y="615">in the emulator</text>
+  <text class="lbl" x="894" y="514">grades — separate DB</text>
+  <text class="mono" x="894" y="533">karani-grades database</text>
+  <text class="mono" x="894" y="548">instructor session only</text>
+  <text class="mono" x="894" y="570">no pipeline SA is bound</text>
+  <text class="mono" x="894" y="585">to it at all. The events</text>
+  <text class="mono" x="894" y="600">binding is IAM-conditioned</text>
+  <text class="mono" x="894" y="615">on the events database</text>
 
   <!-- the denial: the pipeline cannot reach grades -->
   <g stroke="#7a7a7a" stroke-width="2.6">

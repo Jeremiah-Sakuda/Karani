@@ -167,27 +167,69 @@ def cmd_run(args: argparse.Namespace) -> int:
         # returns early and the instructor-disagrees flow -- the whole point of ratification
         # -- silently does nothing.
         serve(rendered, port=int(args.port), store=store)
+
+    # The artifact is on disk and the log is durable. If a worker never returned, exit rather
+    # than letting the interpreter's atexit join hold a finished Cloud Run Job open until its
+    # task timeout. Returns normally when nothing is outstanding.
+    if summary.threads_outstanding:
+        from karani.runtime import hard_exit
+
+        hard_exit(0, reason=f"T_max reached with {summary.threads_outstanding} worker(s) blocked")
     return 0
 
 
 def cmd_docket(args: argparse.Namespace) -> int:
+    """Serve the docket over the most recent completed run.
+
+    The default is deliberately *the store*, not a fixture. On the deployed path the store is
+    Firestore, so the hosted docket shows what the nightly Cloud Run Job actually produced --
+    which is the whole Taskmaster narrative: the unattended overnight run is what the
+    instructor finds in the morning.
+
+    A review caught this pointing the wrong way. The Job wrote Firestore while the docket
+    service was deployed with a local backend and a `--golden fixtures/...` command, so the
+    two were separate chains: the public UI served a committed fixture and the live analysis
+    went somewhere nobody could see.
+
+    The committed run is the *fallback*, for a fresh clone with no runs yet, and it is
+    labelled as a recorded run on the page rather than passed off as live.
+    """
     from karani.docket.server import serve
 
     settings = Settings.from_env()
+    store = None
+
     if args.golden:
         path = Path(args.golden)
         events = read_jsonl_log(path)
         run_id = events[0].run_id if events else "run-golden"
-        print(f"serving the committed golden log: {path} ({len(events)} events)")
+        print(f"serving the committed recorded run: {path} ({len(events)} events)")
     else:
-        store = open_store(settings)
-        run_id = args.run_id or (store.list_runs() or [""])[-1]
-        if not run_id:
-            print("no runs found; try --golden fixtures/golden-log.jsonl", file=sys.stderr)
-            return 1
-        events = store.read_run(run_id)
+        try:
+            store = open_store(settings)
+            runs = store.list_runs()
+        except Exception as exc:  # noqa: BLE001 - an unreachable store falls back, not crashes
+            print(
+                f"store unavailable ({type(exc).__name__}); falling back to the recorded run",
+                file=sys.stderr,
+            )
+            store, runs = None, []
 
-    serve(render(run_id, events), port=int(args.port), store=open_store(settings))
+        run_id = args.run_id or (runs[-1] if runs else "")
+        if run_id and store is not None:
+            events = store.read_run(run_id)
+            print(
+                f"serving run {run_id} from the {settings.store_backend} store "
+                f"({len(events)} events)"
+            )
+        else:
+            events = read_jsonl_log(settings.golden_log)
+            run_id = events[0].run_id if events else "run-recorded"
+            print(
+                f"no runs in the store; serving the committed recorded run ({len(events)} events)"
+            )
+
+    serve(render(run_id, events), port=int(args.port), store=store)
     return 0
 
 

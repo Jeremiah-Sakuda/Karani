@@ -92,7 +92,7 @@ gcloud run deploy karani-docket \
   --min-instances=0 \
   --max-instances=4 \
   --memory=1Gi \
-  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},KARANI_STORE_BACKEND=local" \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},KARANI_STORE_BACKEND=firestore" \
   --port=8080
 
 URL=$(gcloud run services describe karani-docket --region="$REGION" --format='value(status.url)')

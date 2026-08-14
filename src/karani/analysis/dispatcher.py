@@ -70,6 +70,7 @@ class RunSummary:
     aborted: bool = False
     abort_reason: str = ""
     cache_missing: bool = False
+    threads_outstanding: int = 0
 
     @property
     def cache_hit_rate(self) -> float | None:
@@ -280,11 +281,24 @@ def run_pipeline(
                 _abandon(store, run_id, ref.student_id, "join_timeout", summary)
 
     finally:
-        # Never wait on threads that may never return. Python's threads are not killable, so
-        # a genuinely hung worker leaks until the process exits -- which for a Cloud Run Job
-        # is moments later. The run must not wait for it.
+        # Never wait on threads that may never return.
+        #
+        # Precise about what this does and does not achieve, because an earlier comment here
+        # overclaimed: `cancel_futures=True` cancels *pending* futures, and a future that is
+        # already RUNNING cannot be cancelled -- Python cannot interrupt a thread from
+        # outside it. ThreadPoolExecutor also registers an atexit hook that joins its workers,
+        # so a permanently blocked worker holds the interpreter open past every deadline set
+        # here.
+        #
+        # So this bounds the LOGICAL run: TaskAbandoned is written, render() fires, the
+        # artifact exists. Bounding the PROCESS is `karani.runtime.hard_exit`, called by the
+        # entrypoint once the artifact is durable. It lives there and not here because a
+        # library must not kill its host process.
         pool.shutdown(wait=False, cancel_futures=True)
 
+    from karani.runtime import worker_threads_outstanding
+
+    summary.threads_outstanding = len(worker_threads_outstanding())
     summary.wall_clock_seconds = time.monotonic() - started
 
     _write(

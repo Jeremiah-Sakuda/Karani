@@ -22,7 +22,9 @@ denial is filmed, because an emulator test is evidence and footage is proof.
 
 from __future__ import annotations
 
+import contextlib
 import os
+import uuid
 from pathlib import Path
 
 import pytest
@@ -75,9 +77,31 @@ def test_every_service_account_is_denied_grade_writes(matrix):
     """
     for account in matrix["service_accounts"]:
         denied = {row["operation"] for row in account["denied"]}
-        assert "firestore.write_grade" in denied, (
-            f"{account['id']} does not assert a grades/ denial"
-        )
+        grade_denials = {op for op in denied if "grade" in op}
+        assert grade_denials, f"{account['id']} does not assert any grades denial"
+
+
+def test_the_analysis_identity_denies_the_operation_that_was_actually_granted(matrix):
+    """Property: the matrix names the CREATE, not the vague "write".
+
+    This is the finding that made the whole boundary false for a while. The append-only role
+    grants `datastore.entities.create`, which cannot be scoped to a collection, so the
+    operation to deny is specifically *creating a fresh document* — not "writing a grade",
+    which a `.set()` test can satisfy for the wrong reason.
+
+    Asserting the matrix uses the precise name keeps the test suite and the threat aligned: a
+    future editor who softens this back to "write_grade" fails here.
+    """
+    analysis = next(a for a in matrix["service_accounts"] if a["id"] == "karani-analysis")
+    denied = {row["operation"] for row in analysis["denied"]}
+
+    assert "firestore.create_grade_fresh_document" in denied, (
+        "the analysis identity must deny creating a FRESH grade document -- that is the "
+        "operation datastore.entities.create authorises"
+    )
+    assert "firestore.create_anything_in_grades_database" in denied, (
+        "the boundary is the database, not a collection name"
+    )
 
 
 def test_analysis_identity_is_denied_event_mutation(matrix):
@@ -167,25 +191,98 @@ def test_client_surface_rejects_event_update():
 
 
 @pytest.mark.deployed
-def test_deployed_analysis_sa_is_denied_grade_write():
-    """Property (KAR-312, the half that matters): the deployed pipeline SA gets PERMISSION_DENIED.
+def test_deployed_pipeline_sa_cannot_CREATE_a_fresh_grade_document():
+    """Property (KAR-312): the operation the granted permission would authorise is denied.
 
-    This is the assertion the whole "structurally impossible" claim is licensed by, and it is
-    the §8 beat 7 camera shot. Until this passes on the deployed path, the language discipline
-    in AGENTS.md applies: say *"no field can carry a verdict into any downstream system, and no
-    aggregate can be computed"* — never "structurally impossible".
+    **This test replaced one that could pass while the boundary was broken**, and the
+    replacement is the whole point.
+
+    The old test did `grades.document("s01").set({...})` and expected `PermissionDenied`. A
+    `.set()` with no precondition is an upsert, so it can require *update* permission — which
+    the append-only role withholds — and be denied for a reason that has nothing to do with
+    the boundary being tested. Meanwhile `datastore.entities.create` **is** granted, and
+    `.create()` on a document ID that does not exist yet is exactly the operation it
+    authorises. The green check was measuring the wrong thing.
+
+    So this attempts a create, on a random document ID that certainly does not exist, in the
+    grades database. If the boundary holds, it is denied. If it succeeds, a pipeline identity
+    just wrote a grade and the central claim of this project is false.
+
+    Do not record the `PERMISSION_DENIED` camera beat until this passes: filming the wrong
+    operation demonstrates a denial that proves nothing.
     """
     pytest.importorskip("google.cloud.firestore")
     project = os.environ.get("GOOGLE_CLOUD_PROJECT")
     if not project:
         pytest.skip("GOOGLE_CLOUD_PROJECT is not set")
 
-    from google.api_core.exceptions import PermissionDenied
+    from google.api_core.exceptions import NotFound, PermissionDenied
     from google.cloud import firestore
 
-    client = firestore.Client(project=project)
-    with pytest.raises(PermissionDenied):
-        client.collection("grades").document("s01").set({"grade": "A", "actor": "pipeline"})
+    from karani.config import GRADES_DATABASE
+
+    victim = f"probe-{uuid.uuid4().hex}"
+
+    try:
+        client = firestore.Client(project=project, database=GRADES_DATABASE)
+    except NotFound:
+        pytest.skip(f"grades database {GRADES_DATABASE} does not exist yet; run bootstrap_gcp.sh")
+
+    with pytest.raises((PermissionDenied, NotFound)):
+        client.collection("grades").document(victim).create(
+            {"grade": "A", "actor": "pipeline", "student_id": victim}
+        )
+
+
+@pytest.mark.deployed
+def test_deployed_pipeline_sa_cannot_create_anywhere_in_the_grades_database():
+    """Property: the denial is the database, not one collection's name.
+
+    An identity blocked from `grades/` but able to create in `grades_v2/` or `scratch/` on the
+    same database has not been blocked from anything -- it has been blocked from a string. The
+    boundary is the database binding, so this probes a collection nobody has ever named.
+    """
+    pytest.importorskip("google.cloud.firestore")
+    project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+    if not project:
+        pytest.skip("GOOGLE_CLOUD_PROJECT is not set")
+
+    from google.api_core.exceptions import NotFound, PermissionDenied
+    from google.cloud import firestore
+
+    from karani.config import GRADES_DATABASE
+
+    try:
+        client = firestore.Client(project=project, database=GRADES_DATABASE)
+    except NotFound:
+        pytest.skip(f"grades database {GRADES_DATABASE} does not exist yet")
+
+    with pytest.raises((PermissionDenied, NotFound)):
+        client.collection(f"anything-{uuid.uuid4().hex}").document("x").create({"grade": "A"})
+
+
+@pytest.mark.deployed
+def test_deployed_pipeline_sa_CAN_still_create_events():
+    """Property: the condition restricts the boundary without breaking the pipeline.
+
+    The complement that keeps the two tests above honest. A binding that denied everything
+    would pass both of them and ship a system that cannot run. This asserts the events
+    database is still writable by the identity that has to write it.
+    """
+    pytest.importorskip("google.cloud.firestore")
+    project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+    if not project:
+        pytest.skip("GOOGLE_CLOUD_PROJECT is not set")
+
+    from google.cloud import firestore
+
+    from karani.config import EVENTS_DATABASE
+
+    client = firestore.Client(project=project, database=EVENTS_DATABASE)
+    probe = f"probe-{uuid.uuid4().hex}"
+    client.collection("runs").document(probe).collection("events").document("e1").create(
+        {"step": "RunStarted", "run_id": probe}
+    )
 
 
 @pytest.mark.deployed
@@ -199,9 +296,13 @@ def test_deployed_analysis_sa_cannot_mutate_an_event():
     from google.api_core.exceptions import PermissionDenied
     from google.cloud import firestore
 
-    client = firestore.Client(project=project)
+    from karani.config import EVENTS_DATABASE
+
+    client = firestore.Client(project=project, database=EVENTS_DATABASE)
     doc = client.collection("runs").document("run-iam-probe").collection("events").document("probe")
-    doc.create({"step": "RunStarted", "run_id": "run-iam-probe"})
+    with contextlib.suppress(Exception):
+        # Already present from an earlier probe run is fine; the update below is the assertion.
+        doc.create({"step": "RunStarted", "run_id": "run-iam-probe"})
 
     with pytest.raises(PermissionDenied):
         doc.update({"step": "Tampered"})

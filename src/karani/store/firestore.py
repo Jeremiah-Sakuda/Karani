@@ -22,8 +22,18 @@ from karani.schema.events import Event, EventIdCollision
 class FirestoreEventStore:
     """Append-only event store on Firestore. No update. No delete."""
 
-    def __init__(self, project: str, use_emulator: bool = False) -> None:
+    def __init__(
+        self, project: str, use_emulator: bool = False, database: str | None = None
+    ) -> None:
         from google.cloud import firestore
+
+        from karani.config import EVENTS_DATABASE
+
+        # The EVENTS database, explicitly. Never the grades database, and never `(default)`.
+        # A pipeline identity's IAM binding is conditioned on this database name, so pointing
+        # this client elsewhere produces PERMISSION_DENIED rather than a quiet write to the
+        # wrong place.
+        self.database = database or EVENTS_DATABASE
 
         if use_emulator:
             # The emulator ignores credentials but still wants a project ID.
@@ -34,7 +44,7 @@ class FirestoreEventStore:
                     "the firestore backend needs GOOGLE_CLOUD_PROJECT. To run without "
                     "credentials use KARANI_STORE_BACKEND=local (which `make demo` does)."
                 )
-            self._client = firestore.Client(project=project)
+            self._client = firestore.Client(project=project, database=self.database)
         self.project = project
 
     def _doc(self, run_id: str, event_id: str) -> Any:
