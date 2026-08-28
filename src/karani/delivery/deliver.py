@@ -47,7 +47,7 @@ def build_csv(run: RenderedRun, grades: dict[str, str] | None = None) -> str:
 
     `grades` is whatever the instructor wrote into `grades/`, passed in by the caller that read
     it under the instructor's own credentials. This function has no way to obtain it otherwise,
-    which is deliberate: a delivery module that could reach the grades collection would be an
+    which is deliberate: a delivery module that could reach the grades database would be an
     identity that could write to it if a bug inverted a condition somewhere.
     """
     grades = grades or {}

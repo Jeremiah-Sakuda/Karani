@@ -60,11 +60,13 @@ def main() -> int:
     parser.add_argument("--out", default=str(REPO / "out" / "static-docket"))
     args = parser.parse_args()
 
-    events = read_jsonl_log(Path(args.log))
+    events = read_jsonl_log(Path(args.log).resolve())
     run_id = events[0].run_id if events else "run-golden"
     run = render(run_id, events)
 
-    out = Path(args.out)
+    # The documented invocation passes a relative output directory.  Resolve it before the
+    # completion message so a successful render cannot crash after writing every artifact.
+    out = Path(args.out).resolve()
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
@@ -90,7 +92,8 @@ def main() -> int:
 
     (out / "artifact.json").write_text(run.to_json(), encoding="utf-8")
 
-    print(f"wrote {len(pages) + 1} files to {out.relative_to(REPO)}")
+    display_out = out.relative_to(REPO) if out.is_relative_to(REPO) else out
+    print(f"wrote {len(pages) + 1} files to {display_out}")
     for name in sorted(pages):
         print(f"  {name:<26} {len(pages[name]):>7,} bytes")
     print(

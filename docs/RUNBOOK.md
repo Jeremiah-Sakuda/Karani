@@ -61,7 +61,7 @@ Cloud" requirement, and it is banked early because it depends on a clock nothing
 
 ## Beat 3 — 0:45–1:10 · fan-out, then scale
 
-**On screen:** the Cloud Run task grid at 15 parallel. Hard cut to the scale-run overview
+**On screen:** the Cloud Run Job execution detail showing the 15-worker setting. Hard cut to the scale-run overview
 frame — *"150 ingested · N analyzed · N abandoned · N unparseable"*.
 
 **Say:** one sentence — same architecture, ten times the pile, measured.

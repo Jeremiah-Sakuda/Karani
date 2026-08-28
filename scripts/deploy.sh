@@ -72,7 +72,7 @@ JOB_ARGS=(
   --cpu=2
   --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},GOOGLE_GENAI_USE_VERTEXAI=true,KARANI_STORE_BACKEND=firestore,KARANI_MODEL_BACKEND=vertex"
   --command="python"
-  --args="-m,karani.cli,run,--source,fixtures,--live"
+  --args="-m,karani.cli,run,--source,fixtures,--live,--workers,15"
 )
 if gcloud run jobs describe karani-run --region="$REGION" >/dev/null 2>&1; then
   gcloud run jobs update karani-run "${JOB_ARGS[@]}"

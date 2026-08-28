@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 720" width="1180" height="720" font-family="Inter, Helvetica, Arial, sans-serif">
   <title>Karani identity boundaries: five service accounts, what each may do, and what each is denied</title>
-  <desc>Five per-stage service accounts. Ingest may read the source bucket only. Analysis may invoke Vertex AI and create events, and is denied event update, event delete, and any write to grades. Render may read events and write artifacts and is denied model access. Delivery holds the drive.file scope for one folder and is denied reading the instructor's wider Drive. The docket may read events and is denied grade writes. No service account can write to the grades collection; that denial is asserted both in the emulator and on the deployed path.</desc>
+  <desc>Five per-stage service accounts. Ingest may read the source bucket only. Analysis may invoke Vertex AI and create events, and is denied event update, event delete, and any write to grades. Render may read events and write artifacts and is denied model access. Delivery holds the drive.file scope for one folder and is denied reading the instructor's wider Drive. The docket may read events and is denied grade writes. No service account can write to the separate grades database. Local negative tests assert the declared policy; the deployed fresh-document-create assertion remains a release gate until it runs.</desc>
 
   <defs>
     <style>
@@ -20,10 +20,10 @@
   <rect class="bg" x="0" y="0" width="1180" height="720"/>
 
   <text class="title" x="40" y="42">What each identity may do — and what it is denied</text>
-  <text class="cap" x="40" y="62">Least privilege stated as an argument. Every denial below is executed as a test that asserts PERMISSION_DENIED (KAR-313); a documentation diff would prove only that someone wrote down an intention.</text>
+  <text class="cap" x="40" y="62">Least privilege stated as an argument. Local negative tests execute each denial; deployed fresh-create proof remains a release gate (KAR-312/313).</text>
 
   <text class="sect" x="40" y="104">GRANTED</text>
-  <text class="sect" x="470" y="104">DENIED — AND ASSERTED, NOT ASSUMED</text>
+  <text class="sect" x="470" y="104">DENIED — LOCALLY ASSERTED; DEPLOYED PROOF PENDING</text>
 
   <!-- ============ karani-ingest ============ -->
   <rect class="sa" x="40" y="116" width="176" height="78"/>
@@ -56,7 +56,7 @@
   <rect class="deny" x="646" y="212" width="164" height="24"/><text class="monod" x="654" y="228">delete an event</text>
   <rect class="deny" x="822" y="212" width="164" height="24"/><text class="monod" x="830" y="228">write to a bucket</text>
   <rect class="deny" x="470" y="244" width="340" height="24" stroke-width="2"/>
-  <text class="monod" x="478" y="260" font-weight="700">write grades/  —  filmed on camera, deployed path</text>
+  <text class="monod" x="478" y="260" font-weight="700">write grades/  —  required deployed camera beat</text>
   <rect class="deny" x="822" y="244" width="164" height="24"/><text class="monod" x="830" y="260">create a Drive file</text>
   <text class="mono" x="470" y="290">This is the identity a viewer would most expect to be able to grade —</text>
   <text class="mono" x="470" y="305">which is exactly why it is the one shown being refused.</text>

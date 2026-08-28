@@ -89,7 +89,7 @@ Cells enumerate requirement IDs; **never state coverage as a range.** `make comp
 | Startup Excellence eligibility | Submitted on behalf of Asili Commerce with corporate email; enforcement level (account vs. submission) answered in `/docs/compliance.md` | KAR-003 |
 | ≤4-min demo video, public, English | Shot list §8; hard cap 4:00, target 3:45; Public visibility verified logged-out | KAR-601, KAR-602, KAR-603, KAR-604, KAR-605, KAR-606, KAR-607, KAR-608 |
 | Repo + spin-up instructions | README with Quickstart (`make demo`, zero credentials, line 1), beat-by-beat reproduction, bootstrap/teardown scripts, emulator path | KAR-501, KAR-502, KAR-503, KAR-504, KAR-505, KAR-506, KAR-507 |
-| Architecture diagram | Deliverable in Phase 5; includes the negative-space `grades/` collection, the fan-out shape, and the delivery edge | KAR-505 |
+| Architecture diagram | Deliverable in Phase 5; includes the negative-space grades database, the fan-out shape, and the delivery edge | KAR-505 |
 | Hosted project (encouraged) | Public `.run.app` docket serving the cached golden run; live execution behind a quota'd button; survives to Oct 1 | KAR-411, KAR-412 |
 | Bonus: blog + social + Gemma | Blog Aug 28–29 (the validation gate + the quote-lint false-positive find); teaser post ~Aug 22 + launch post Aug 30 with `#AllThingsAgenticHackathon`; Gemma triage tier visible in README/diagram/video | KAR-620, KAR-621, KAR-622, KAR-623, KAR-624 |
 
@@ -100,7 +100,7 @@ Cells enumerate requirement IDs; **never state coverage as a range.** `make comp
 ### 3.1 Components
 ```
 Cloud Scheduler ──▶ Cloud Run Job "karani-run" (dispatcher)
-                        │  fan-out: one task per submission (15 parallel; 150 in the scale run)
+                        │  fan-out: up to 15 analyst workers across submissions (150 in the scale run)
                         ▼
    [ingest adapter] → [rendition freeze] → [Gemma triage] → [Model Armor scan]
                         │
@@ -148,7 +148,7 @@ Every unit of work terminates in one of the **six outcomes** of §1.2, each with
 
 **Rendered artifacts:** carry `sourceEvents[]` + a hash over the consumed seq range (divergence is detectable, not assumed).
 
-**Grades:** `grades/{...}` in a collection the pipeline service accounts **cannot write**; the instructor's authenticated session is the only writer; `grades/{id}/history` create-only. No numeric or ordinal field exists anywhere on observations — `meets/exceeds/below` enums are banned as verdicts in costume.
+**Grades:** `grades/{...}` in a separate Firestore database that no pipeline service account is bound to; the instructor's authenticated session is the only writer; `grades/{id}/history` create-only. No numeric or ordinal field exists anywhere on observations — `meets/exceeds/below` enums are banned as verdicts in costume.
 
 ### 3.4 Invariants and their enforcement mechanisms
 | Invariant | Enforcement (checkable in repo) |
@@ -211,7 +211,7 @@ Built inside `src/`, no generality attempted. Baraza adopts by copy-paste, never
 - **KAR-303** `src/ingest/` with `local_source.py` behind a source interface; local is the default and the only path `make demo` uses. *AC:* full run completes with zero Google OAuth.
 - **KAR-304** **Rendition freeze** — immutable normalized rendition per submission (plain text + paragraph→offset map; page images for PDFs), stored under `rendition_id = sha256(normalizer_version ‖ extractor_versions ‖ normalized_text)`; span registry built from the rendition; all extraction and all viewing target the rendition, never the source file. *AC (property: the cited artifact cannot drift):* editing a source file post-ingest changes nothing downstream; identical content yields an identical `rendition_id`.
 - **KAR-305** Offset-preserving parsing for .md/.docx/.pdf → span registry. *AC:* a random span's `sha256(text)` matches the rendition slice.
-- **KAR-306** Analysis fan-out, one Cloud Run task per submission, **span IDs interleaved into the rendition text**. *AC:* 15-task parallel run completes; first-attempt acceptance rate instrumented into `/docs/metrics.json`.
+- **KAR-306** Analysis fan-out, up to 15 analyst workers inside one Cloud Run Job, **span IDs interleaved into the rendition text**. *AC:* a 15-submission run completes with the worker-pool setting recorded in deployment configuration; first-attempt acceptance rate instrumented into `/docs/metrics.json`.
 - **KAR-307** Validation gate: accept | reject-with-feedback (≤2 attempts, observation granularity, only failed observations resubmitted) | `NEEDS_HUMAN`; every attempt an event; run-level circuit breaker. *AC:* forced-failure fixture shows exactly two retries then a human-queue item, with no per-student full regeneration.
 - **KAR-308** `NoEvidenceFound` path, excluded from retry. *AC:* `s12` produces it every run and never enters the retry loop.
 - **KAR-309** Verdict lint (deterministic), split by object: **generated text** → masked with the visible redaction notice; **`citation.quote`** → flagged with a review chip, never masked, **unless** the source span carries `InjectionDetected`, in which case masked with the injection notice. *AC (property: no verdict reaches the screen AND no student's own words are ever redacted):* asserted against `fixtures/adversarial/` (KAR-318), including a fixture where a student legitimately writes "this policy is excellent" — rendered intact with no chip and no mask.
@@ -250,7 +250,7 @@ Built inside `src/`, no generality attempted. Baraza adopts by copy-paste, never
 - **KAR-502** README: Quickstart (line 1 = `make demo`); `## Reproducing the demo video, beat by beat`; `## Relationship to my other submissions` (shared design DNA disclosed; the Aug 8 framework finding referenced); `## Provenance and prior work` (all code authored in the Submission Period; Gemini 3.5 exclusively at runtime; standard development tools and AI coding assistants at build time — named tools omitted, nothing misattributed); `## Fixtures and data provenance` (synthetic + generated-scale disclosure; manifest scorecard: found N of N planted problems; the never-seeded statement); `## Negative decisions` (the §1.4 arithmetic verbatim); `## Findings and learnings` (from FINDINGS.md — including the quote-lint false-positive class and the measured entailment branch). *AC:* every section present; no section stub.
 - **KAR-503** Pinned lockfile + pinned model ID strings + the model-to-role map. *AC:* fresh `pip install` from the lockfile resolves; grep finds no model alias strings.
 - **KAR-504** `/docs/metrics.json` completeness pass: cost per run (est vs. measured), first-attempt acceptance, entailment disagreement rate + branch, retry distribution, cache hit rate, scale-run stats, KAR-205 friction numbers, KAR-317 beat timings. *AC:* `verify_artifact.py` and the diagram checker read only this file; no number in README/diagrams/video lacks a source here.
-- **KAR-505** Two architecture diagrams: **Diagram A** (system) with the negative-space `grades/` collection, the fan-out shape, and the delivery edge; **Diagram B** (identity) with per-stage SAs and their denials. Every number on either traces to `/docs/metrics.json`, and the images say so. *AC:* both committed as SVG + PNG.
+- **KAR-505** Two architecture diagrams: **Diagram A** (system) with the negative-space grades database, the fan-out shape, and the delivery edge; **Diagram B** (identity) with per-stage SAs and their denials. Every number on either traces to `/docs/metrics.json`, and the images say so. *AC:* both committed as SVG + PNG.
 - **KAR-506** `scripts/bootstrap_gcp.sh` + `teardown.sh`: project bindings, SAs + custom role, Firestore, Armor template (or honest fallback), Scheduler, budget alerts. *AC:* bootstrap on a throwaway project works; teardown leaves nothing billable.
 - **KAR-507** Clean-clone test on a machine that is not mine: `make demo` in a fresh container. *AC:* passes Aug 26; whatever broke is fixed or documented that day.
 
@@ -259,7 +259,7 @@ Video beats are enumerated one requirement per §8 beat, so that a cut beat is a
 
 - **KAR-601** Beat 1 (0:00–0:20): problem in two sentences; the burned-in lower third *"Karani prepares evidence. It cannot grade."* legible **from second 1**; thesis line spoken at 0:20. *AC:* the refusal is readable in the first 8 seconds by a viewer with no audio.
 - **KAR-602** Beat 2 (0:20–0:45): the run triggered **live** via `--now`, with Cloud Scheduler execution history on screen showing ≥7 prior nightly runs. *AC (property: the backend really runs on Google Cloud):* the console is visible and unedited; the execution history is real, not a mock.
-- **KAR-603** Beat 3 (0:45–1:10): the Cloud Run task grid at 15 parallel, hard-cutting to the scale-run overview frame. *AC:* the frame's counts are read from `/docs/metrics.json`, never typed.
+- **KAR-603** Beat 3 (0:45–1:10): the Cloud Run Job execution and its 15-worker setting, hard-cutting to the scale-run overview frame. *AC:* the frame's counts are read from `/docs/metrics.json`, never typed.
 - **KAR-604** Beat 4 (1:10–1:55): the morning docket; a citation click landing on the cited line; the **divergence tour** showing all six terminal outcomes of one unattended run on one screen. *AC:* six visibly different consequences, from a single run, with no hand-holding between them.
 - **KAR-605** Beat 5 (1:55–2:15): the injection catch — `s07`'s footnote payload, the `InjectionDetected` event, the anomaly item, and analysis proceeding anyway. *AC:* the event and the queue item are both on screen.
 - **KAR-606** Beat 6 (2:15–2:40): the hero beat — the instructor **disagrees** with a drafted observation, edits it, and the supersession event appears. *AC:* the original observation remains visible; the edit is a new record, not a mutation.
@@ -324,7 +324,7 @@ Seconds-denominated; the cut ladder is at the bottom because a build cut on Aug 
 |---|---|---|
 | 1 | 0:00–0:20 | Problem in two sentences. Burned-in lower third from second 1: *"Karani prepares evidence. It cannot grade."* Thesis line spoken at 0:20. |
 | 2 | 0:20–0:45 | Trigger the run live via `--now`. Cloud Scheduler execution history on screen (≥7 prior nightly runs visible) — GCP proof, banked early. |
-| 3 | 0:45–1:10 | Cloud Run task grid, 15 parallel. Hard cut to the **scale-run overview frame**: *"150 ingested · N analyzed · N abandoned · N unparseable"* — one sentence: same architecture, ten times the pile, measured. |
+| 3 | 0:45–1:10 | Cloud Run Job execution and its 15-worker setting. Hard cut to the **scale-run overview frame**: *"150 ingested · N analyzed · N abandoned · N unparseable"* — one sentence: same architecture, ten times the pile, measured. |
 | 4 | 1:10–1:55 | The morning docket. Click an observation → the viewer lands on the cited line. Then the **divergence tour**: one screen showing all six outcomes of one unattended run — accepted, retried-then-accepted, `no_evidence`, `NEEDS_HUMAN`, the injection flag, the excluded unit. *"Six different consequences. Zero hand-holding."* |
 | 5 | 1:55–2:15 | The injection catch: `s07`'s footnote payload, the `InjectionDetected` event, the anomaly item — *"and analysis proceeded, because a blocked file is a punished student."* |
 | 6 | 2:15–2:40 | Hero beat: the instructor **disagrees** with a drafted observation, edits it, the supersession event appears. One line on exemplars. |

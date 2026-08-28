@@ -272,7 +272,7 @@ including the scale-corpus disclosure and the never-seeded statement. Findings a
 learnings drawn from FINDINGS.md, including the quote-lint false-positive class and the
 measured entailment branch.
 
-Then both diagrams (KAR-505): Diagram A with the negative-space grades/ collection, the
+Then both diagrams (KAR-505): Diagram A with the negative-space grades database, the
 fan-out, and the delivery edge; Diagram B with per-stage SAs and their denials. Every
 number traces to docs/metrics.json and the images say so.
 

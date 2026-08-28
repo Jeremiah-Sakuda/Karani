@@ -7,8 +7,6 @@ Standing rule: if a measurement does not exist, this file says "not yet measured
 plausible number is never a substitute for a measured one. Genuine failures are publishable
 findings; polished fabrications are defects.
 
----
-
 ### 2026-08-12 — Model availability
 
 **Finding: there is no `gemini-3.5-pro`.** The PRD (v1.2, §2 and KAR-301) pins analysis to
@@ -337,3 +335,46 @@ The docket now folds the latest run from the configured store, with the committe
 explicitly-labelled fallback. And ratification now reads grades from the instructor's own
 database rather than an empty dict, so "the instructor enters the grade and Karani exports it
 without ever generating it" is a path that runs rather than a sentence.
+
+---
+
+### 2026-08-28 — Submission hardening: a correct local build is not deployed proof
+
+**Measured local verification.** `make test` completed with **162 passed, 5 deselected** in
+14.70 seconds on the local machine. `make lint`, `make compliance`, and the static-docket
+render also passed. These are local measurements only; none is presented as deployed timing or
+as evidence that Google Cloud execution succeeded.
+
+**Cloud discovery.** The configured project is `asili-xprize-2026`; authenticated read-only
+inspection found billing enabled and two unrelated Cloud Run services. Cloud Scheduler is not
+enabled in that project. No Karani resource was created or modified in this session. Enabling
+the API and creating the `karani-events` and `karani-grades` databases are external changes,
+with named Firestore database creation effectively irreversible, so they remain a deliberate
+release gate rather than an inferred action.
+
+**Finding: the recording plan promised the wrong execution surface.** `deploy.sh` creates one
+Cloud Run Job task (`--tasks=1`, `--parallelism=1`), while the runbook promised a 15-task Cloud
+Run grid. The code's actual fan-out is a `ThreadPoolExecutor` owned by the dispatcher, because
+that owner must write `TaskAbandoned` at the join deadline. Raising Cloud Run task count alone
+would not make the claim true: each task would receive the whole source directory and would
+render independently, without cross-task terminal-state joining.
+
+*Fix:* the deployed command now passes `--workers 15`; diagrams, PRD, README alt text, and
+the video runbook describe one Cloud Run Job with a bounded 15-worker analyst pool. This is not
+a scale measurement. The scale metrics stay "not yet measured" until one deployed run records
+them.
+
+**Finding: the static-docket command crashed after successful output.** The documented
+`--out out/static-docket` form wrote all pages, then called `Path.relative_to()` with a
+relative path against an absolute repository root and exited nonzero while printing its final
+line. The renderer now resolves output paths and prints either a repository-relative or
+absolute path. A regression test invokes it from outside the repository with a relative output
+argument.
+
+**Finding: words about the grades boundary must be as exact as the IAM.** Several
+submission-facing surfaces still said “separate collection,” even though the project had
+already corrected the implementation to two Firestore databases. A collection cannot scope
+`datastore.entities.create`; repeating that stale phrase would have undermined the strongest
+architecture claim. README, PRD, Devpost draft, docket challenge page, and both diagrams now
+say “separate Firestore database.” `make release-check` fails on a regression in those
+surfaces.

@@ -119,3 +119,50 @@ has no billing and no model call has ever executed.
 **Requirements touched:** KAR-001, 002, 005, 006, 007, 008, 020, 101, 102, 103, 104, 105,
 201, 202, 203, 204, 206, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 313, 314,
 315, 316, 318, 319, 330, 401, 402, 404, 405, 406, 412, 413, 501, 502, 503, 504, 505, 506
+
+### 2026-08-28 — Submission credibility hardening
+
+**Prompt (verbatim):**
+> This is a submission for this hackathon [https://allthingsagentichackathon.devpost.com/](https://allthingsagentichackathon.devpost.com/) [https://allthingsagentichackathon.devpost.com/rules](https://allthingsagentichackathon.devpost.com/rules) evaluate it as a judge, and score it. Present your findings the way you would to a panel of judges, be thorough and very detailed, then suggest improvements to the team
+
+**Course corrections:**
+- > When done, implement all the improvements yourself
+- > proceed
+
+**Outcome:** The panel assessment found a technically strong but submission-incomplete entry:
+the local system and its evidence trail are credible, while hosted deployment, deployed-path
+IAM proof, scale evidence, user-friction measurement, video, and public links remain absent.
+The repository now mechanically distinguishes those states. `make release-check` protects
+local, judge-facing claims; `make submission-check` deliberately fails until the required
+live measurements and publication evidence exist.
+
+Corrected every submission-facing reference to the former shared-collection IAM model: grades
+are in a separate Firestore database, which is the actual boundary. Corrected a second
+credibility defect: the deployment creates one Cloud Run Job with an internal bounded worker
+pool, not a 15-task Cloud Run grid. Deployment now explicitly configures 15 workers, and the
+architecture and recording plan name that shape precisely. The documented static-docket
+command also had a relative-output-path crash after writing its files; it is fixed and
+regression-tested.
+
+Local evidence: 162 tests passed (five cloud-dependent tests deselected), Ruff and mypy
+passed, compliance enumerated all 72 requirements, and the static docket rendered from the
+recorded log. The strict submission check remains red for real missing evidence; it was not
+relaxed.
+
+**Key decisions:**
+
+1. **Correct the Cloud Run story to a 15-worker pool, not a fictitious task grid.** Rejected
+   changing Cloud Run `--tasks` to 15 without a sharding and cross-task terminal join, which
+   would duplicate input or render partial artifacts. The existing dispatcher safely owns the
+   join inside one Job, so the deploy configuration and video should show that truth.
+2. **Make unperformed deployed proof a failing release gate.** Rejected replacing Devpost
+   placeholders or compliance entries with plausible values. `submission-check` names the
+   missing hosted URL, video, scale, timing, and instructor-friction evidence instead.
+3. **Do not provision cloud resources in this session.** Read-only cloud inspection confirmed
+   the project and billing account are available, but Cloud Scheduler is disabled. Bootstrap
+   would enable APIs and create two Firestore databases, an effectively irreversible external
+   change; the authenticated action remains explicitly gated rather than inferred from a
+   repository-hardening request.
+
+**Requirements touched:** KAR-205, KAR-306, KAR-312, KAR-317, KAR-320, KAR-410, KAR-411,
+KAR-412, KAR-501, KAR-503, KAR-505, KAR-603, KAR-607, KAR-624

@@ -4,7 +4,7 @@ PY ?= python3.12
 VENV := .venv
 BIN := $(VENV)/bin
 
-.PHONY: help venv demo demo-live demo-emulator record-cache docket-golden dev-run compliance test lint fmt scale clean
+.PHONY: help venv demo demo-live demo-emulator record-cache docket-golden dev-run compliance test lint fmt scale release-check submission-check bootstrap deploy static-docket clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -61,6 +61,23 @@ dev-run: $(BIN)/python ## Pipeline over the 3-submission dev subset — the only
 
 compliance: $(BIN)/python ## Diff requirement IDs in PRD §4 against the §2 matrix. Nonzero on any orphan.
 	$(BIN)/python scripts/compliance.py
+
+release-check: $(BIN)/python ## Check local, submission-facing claims that must remain true before release.
+	$(BIN)/python scripts/release_check.py
+
+submission-check: $(BIN)/python ## Fail until Devpost copy, hosted proof, and publication requirements are complete.
+	$(BIN)/python scripts/release_check.py --submission
+
+bootstrap: ## Provision Karani cloud prerequisites; requires PROJECT=<Google Cloud project>. Creates resources.
+	@test -n "$(PROJECT)" || { echo "usage: make bootstrap PROJECT=<project-id>"; exit 2; }
+	./scripts/bootstrap_gcp.sh "$(PROJECT)"
+
+deploy: ## Deploy Karani to Cloud Run; requires PROJECT=<Google Cloud project>. Creates or updates resources.
+	@test -n "$(PROJECT)" || { echo "usage: make deploy PROJECT=<project-id>"; exit 2; }
+	./scripts/deploy.sh "$(PROJECT)"
+
+static-docket: $(BIN)/python ## Render the committed recorded run as a static docket under out/static-docket.
+	$(BIN)/python scripts/render_static_docket.py --out out/static-docket
 
 scale: $(BIN)/python ## Regenerate the ~150-submission scale corpus from the committed seed.
 	$(BIN)/python scripts/gen_scale_corpus.py --out fixtures/scale

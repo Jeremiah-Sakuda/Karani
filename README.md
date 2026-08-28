@@ -79,11 +79,11 @@ this repository.
 
 ## Architecture
 
-![Karani's system architecture: Cloud Scheduler triggers a Cloud Run Job whose dispatcher fans out one task per submission through ingest, rendition freeze, Gemma triage and an injection scan into analyst workers on Gemini 3.6 Flash; every step appends to a create-only Firestore event log; render(runId) folds that log into evidence sheets and a class overview; and a separate grades collection sits outside the pipeline entirely, unreachable by every pipeline service account](docs/architecture/diagram_a_system.svg)
+![Karani's system architecture: Cloud Scheduler triggers a Cloud Run Job whose dispatcher fans out up to 15 analyst workers across submissions through ingest, rendition freeze, Gemma triage and an injection scan into Gemini 3.6 Flash; every step appends to a create-only Firestore event log; render(runId) folds that log into evidence sheets and a class overview; and a separate grades database sits outside the pipeline entirely, unreachable by every pipeline service account](docs/architecture/diagram_a_system.svg)
 
 *Source: [diagram_a_system.svg](docs/architecture/diagram_a_system.svg). Every number traces to [docs/metrics.json](docs/metrics.json).*
 
-![What each Karani identity may do and what it is denied: five per-stage service accounts, each with its granted roles and the specific operations it is denied, including every account's denial of writes to the grades collection](docs/architecture/diagram_b_identity.svg)
+![What each Karani identity may do and what it is denied: five per-stage service accounts, each with its granted roles and the specific operations it is denied, including every account's denial of writes to the grades database](docs/architecture/diagram_b_identity.svg)
 
 *Source: [diagram_b_identity.svg](docs/architecture/diagram_b_identity.svg), generated from [deploy/iam/negative-matrix.yaml](deploy/iam/negative-matrix.yaml), which [tests/test_iam_boundary.py](tests/test_iam_boundary.py) reads directly.*
 

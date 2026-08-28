@@ -82,7 +82,7 @@ The refusal is not a promise. It is checkable, right now, three ways:
 - **Read the test.** A parametrised test asserts every one of 27 verdict-shaped field names is
   rejected by the schema individually.
 - **Watch the denial.** The demo video shows a pipeline service account attempting a write to
-  the grades collection and receiving `PERMISSION_DENIED`, on the deployed path, in the live
+  the grades database and receiving `PERMISSION_DENIED`, on the deployed path, in the live
   console.
 
 And incumbents structurally cannot follow: **an auto-grader's revenue is the score.**

@@ -465,9 +465,11 @@ def challenge_page(answer: str = "", asked: str = "") -> str:
       Not a disabled field, not a nulled one — there is no such field, and the schema rejects
       unknown fields, so one cannot be attached at runtime either. This is the layer that
       actually holds.</li>
-  <li><strong>IAM boundary.</strong> Grades live in a separate collection that every pipeline
-      service account is denied write access to, by a custom role, asserted on the deployed
-      path and not only in an emulator. Karani cannot write a grade even if something
+  <li><strong>IAM boundary.</strong> Grades live in a separate Firestore database that no
+      pipeline service account is bound to; the events-only role is IAM-conditioned to the
+      event database. The deployed fresh-document-create test is a required release gate;
+      until it passes, this page does not claim deployed proof. Karani cannot write a grade
+      even if something
       persuaded it to want to.</li>
   <li><strong>Validation gate.</strong> An observation reaches an evidence sheet only after
       its citation passes set membership, verbatim quotation, positional identity, and an
