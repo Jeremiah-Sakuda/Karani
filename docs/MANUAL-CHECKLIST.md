@@ -16,7 +16,22 @@ the commit log. Two are worth knowing about because they change what you film:
 - **Beat 6 told you to film a disagreement with a correct observation.** Read §Beat 6 in the
   run-book before recording. Use `s01 c2`, not `s09`.
 
-Test count went 169 → 256 today, all five gates green.
+Test count went 169 → 283 today, all five gates green. Since the morning's note, four
+features shipped and are live on the deployed project:
+
+- **The arena** — https://karani-arena-u42sxjnqkq-uc.a.run.app — paste any essay, the real
+  pipeline runs on it, no grade comes back. Its first live test found a real scanner bug,
+  which is the best thing that could have happened; the story is in the Devpost copy.
+- **`/replay`** — the night's event log, watched settling. Strong candidate for beat 2/3
+  b-roll: forty seconds, no narration needed beyond one sentence.
+- **`/brief`** — the morning work-list with class-level reteach patterns. This is the
+  "sends the right info to the right places" shot.
+- **`make demo-scholarship`** — the same pipeline on scholarship review, with real Gemma
+  second-reader verdicts replayed from cache. One sentence in the video ("different domain,
+  same refusal, zero code changes") if time permits.
+
+The Gemma bonus is now load-bearing (layer 5, cross-family second reader) and CLOSED in
+compliance.md — no Ollama pull needed on your side; the recorded verdicts are committed.
 
 ---
 

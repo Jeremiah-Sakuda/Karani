@@ -220,6 +220,27 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _latest_run_id(runs: list[str]) -> str:
+    """The chronologically newest run, not the lexicographically last one.
+
+    Run ids embed a UTC timestamp (`run-20260831T183116Z`, `run-scale-20260831T191243Z`),
+    but any id with a word between the prefix and the stamp sorts after every plain one --
+    `s` > `2` -- so the day a scale run landed, `runs[-1]` picked it and would have kept
+    picking it over every nightly run for the rest of the project's life. The docket would
+    have served an August benchmark in October while the Scheduler wrote fresh runs nightly,
+    and nothing would have looked wrong.
+
+    The digits in the id ARE its timestamp, whatever the prefix, so chronology is recovered
+    by comparing them. Ids with no digits sort first and lexicography breaks ties.
+    """
+
+    def key(run_id: str) -> tuple[int, str]:
+        digits = "".join(c for c in run_id if c.isdigit())
+        return (int(digits) if digits else 0, run_id)
+
+    return max(runs, key=key)
+
+
 def cmd_docket(args: argparse.Namespace) -> int:
     """Serve the docket over the most recent completed run.
 
@@ -257,7 +278,7 @@ def cmd_docket(args: argparse.Namespace) -> int:
             )
             store, runs = None, []
 
-        run_id = args.run_id or (runs[-1] if runs else "")
+        run_id = args.run_id or (_latest_run_id(runs) if runs else "")
         if run_id and store is not None:
             # A run that cannot be read or rendered must not take the docket down with it.
             # This is the container's entrypoint: an exception here is not a stack trace an

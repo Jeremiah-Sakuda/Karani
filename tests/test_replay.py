@@ -174,3 +174,18 @@ def test_golden_run_shows_injection_and_abandonment():
 
     assert result.excluded, "no abandoned unit in the golden run"
     assert result.overview["excluded_total"] == len(result.excluded)
+
+
+def test_latest_run_is_chronological_not_lexicographic():
+    """Found live: run-scale-* sorts after run-YYYYMMDD* forever ('s' > '2'), so the
+    deployed docket served an old scale benchmark as "latest" and would have masked every
+    future nightly run. Latest means newest timestamp, whatever the id's prefix."""
+    from karani.cli import _latest_run_id
+
+    runs = [
+        "run-20260831T183116Z",
+        "run-scale-20260831T191243Z",
+        "run-20260901T030000Z",
+    ]
+    assert _latest_run_id(runs) == "run-20260901T030000Z"
+    assert _latest_run_id(runs[:2]) == "run-scale-20260831T191243Z"
