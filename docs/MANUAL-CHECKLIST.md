@@ -174,9 +174,27 @@ social URLs. The repository is public, so no access grant is needed.
 
 ## Optional
 
-**Install Ollama** for a genuinely local Gemma tier: `brew install ollama && ollama pull gemma3:4b`.
-Triage currently runs its deterministic fallback and records that honestly on every
-`TriageDecided` event. Gemma is worth +0.2 as an additional Google AI model.
+**Install Ollama** for a genuinely local Gemma tier, worth **+0.2** as an additional Google
+AI model:
+
+```bash
+brew install ollama && ollama serve &
+ollama pull gemma3:4b          # ~3.3 GB
+make demo                       # the tier now reports gemma_available: true
+```
+
+Budget the download, not a flag: **Gemma is not a managed publisher model on Vertex.**
+`generate_content` against `gemma-3-4b-it`, `gemma-3-12b-it`, `gemma-3n-e4b-it` and
+`google/gemma-3-4b-it` all return 404 in both `global` and `us-central1` (measured
+2026-08-31). The Vertex route means a Model Garden GPU endpoint — real cost, ~20 minutes, and
+something teardown then has to remove. Local Ollama is the cheaper of the two.
+
+This entry previously read as a one-liner *and* pointed at the wrong model name: `config.py`
+defaulted to the Vertex name `gemma-3-4b-it` while Ollama registers `gemma3:4b`, so following
+this checklist exactly still produced `gemma_available: false` on all 15 submissions with the
+model sitting in `ollama list`. The default is fixed. If you skip this, triage runs its
+deterministic fallback and says so on every `TriageDecided` event, under its own name — never
+Gemma's.
 
 **Do not add Veo or Lyria.** The judging panel suggested it for +0.4 of bonus; both would be
 gratuitous in a grading-evidence tool, and gratuitous integration costs more in Architectural

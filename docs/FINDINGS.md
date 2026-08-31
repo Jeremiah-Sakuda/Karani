@@ -384,3 +384,32 @@ already corrected the implementation to two Firestore databases. A collection ca
 architecture claim. README, PRD, Devpost draft, docket challenge page, and both diagrams now
 say “separate Firestore database.” `make release-check` fails on a regression in those
 surfaces.
+
+## The Gemma bonus costs more than the checklist implied
+
+**Measured 2026-08-31.** The bonus point for "an additional Google AI model" is scored on
+Gemma actually running, and the manual checklist carried it as a short step: `ollama pull
+gemma3:4b`, restart, done. Two things were wrong with that.
+
+The first is fixed elsewhere: `config.py` defaulted `MODEL_TRIAGE` to `gemma-3-4b-it`, the
+Vertex model-garden name, while the local tier talks to Ollama, which registers the model as
+`gemma3:4b`. Following the checklist exactly still produced `gemma_available: false` on every
+submission, with the operator looking at `ollama list` showing the model present.
+
+The second is not fixable from here. **Gemma is not served as a managed publisher model on
+Vertex.** `generate_content` against `gemma-3-4b-it`, `gemma-3-12b-it`, `gemma-3n-e4b-it` and
+`google/gemma-3-4b-it` returns 404 `Publisher model not found`, in both `global` and
+`us-central1`. Gemma on Vertex means deploying a Model Garden endpoint onto a GPU — real cost,
+roughly twenty minutes, and a resource `teardown.sh` then has to remove.
+
+So the bonus has two routes and neither is free:
+
+- **Local:** install Ollama, `ollama pull gemma3:4b` (~3.3 GB), run with
+  `KARANI_MODEL_TRIAGE=gemma3:4b`. Now that the default is correct, this works — but it is a
+  download, not a flag.
+- **Vertex:** deploy a Model Garden endpoint. Costs GPU-hours for as long as it exists.
+
+Recorded because the checklist previously implied a one-liner, and an entrant reading it at
+4pm on the deadline would have discovered otherwise at the worst possible moment. The tier
+itself is real and tested; it reports `gemma_available: false` and falls back to deterministic
+heuristics **under their own name**, never borrowing Gemma's.

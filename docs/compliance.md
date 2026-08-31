@@ -100,4 +100,4 @@ real company or person is named as a bad actor in any fixture, test, comment, or
 | Text description in PRD §1.3 order | **OPEN** |
 | Bonus: blog post with the created-for-this-hackathon language | **OPEN** |
 | Bonus: social post carrying `#AllThingsAgenticHackathon` | **OPEN** |
-| Bonus: additional Google AI model (Gemma triage tier) | **OPEN** |
+| Bonus: additional Google AI model (Gemma triage tier) | **OPEN — and not a one-liner.** Gemma is not a managed Vertex publisher model (404 in `global` and `us-central1`), so it needs either a local Ollama install (~3.3 GB) or a Model Garden GPU endpoint. See FINDINGS.md. The tier is built and falls back honestly under its own name |
