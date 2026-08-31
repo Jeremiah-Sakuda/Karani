@@ -62,8 +62,9 @@ PLANTS = {
     # --- pipeline behaviour: what the system concluded --------------------------------
     # Detected, flagged, and analysis proceeded anyway (KAR-311) -- the second half is the
     # part that matters and the part a detection-only check would miss.
-    "s07-injection-flagged-analysis-proceeds": lambda f, scan, obs: bool(scan and scan.detected)
-    and len(obs) == 5,
+    "s07-injection-flagged-analysis-proceeds": lambda f, scan, obs: (
+        bool(scan and scan.detected) and len(obs) == 5
+    ),
     # An unparseable file must produce no rendition at all. An empty one would report, with
     # full confidence, that the student submitted nothing relevant.
     "s16-unparseable-yields-no-rendition": lambda f, scan, obs: f is None and not obs,
@@ -77,16 +78,16 @@ PLANTS = {
     ),
     # Fan-out and join handle the outlier without special-casing: a full set of observations
     # from a submission whose span count is legitimately low.
-    "s14-outlier-handled-without-special-casing": lambda f, scan, obs: f is not None
-    and len(f.registry.spans) < 12
-    and len(obs) == 5,
+    "s14-outlier-handled-without-special-casing": lambda f, scan, obs: (
+        f is not None and len(f.registry.spans) < 12 and len(obs) == 5
+    ),
     # A referenced figure that does not extract must not become a cited observation. Checked
     # by requiring every s06 citation to quote text that is actually in the rendition -- which
     # is what "the prose reference survives with nothing behind it" means operationally.
-    "s06-dangling-figure-reference-not-fabricated": lambda f, scan, obs: f is not None
-    and f.rendition.source_projection == "pdf_text"
-    and all(
-        o["citation"]["quote"] in f.rendition.text for o in obs if o.get("citation")
+    "s06-dangling-figure-reference-not-fabricated": lambda f, scan, obs: (
+        f is not None
+        and f.rendition.source_projection == "pdf_text"
+        and all(o["citation"]["quote"] in f.rendition.text for o in obs if o.get("citation"))
     ),
     # --- pipeline behaviour: the four the run does NOT exhibit -------------------------
     # Each of these is a real prediction from fixtures/MANIFEST.md that the recorded run
@@ -101,9 +102,7 @@ PLANTS = {
     "s09-over-read-escalates-on-c4": lambda f, scan, obs: any(
         o.get("criterion_id") == "c4" and o.get("needs_human") for o in obs
     ),
-    "s15-is-the-entailment-fixture": lambda f, scan, obs: any(
-        o.get("needs_human") for o in obs
-    ),
+    "s15-is-the-entailment-fixture": lambda f, scan, obs: any(o.get("needs_human") for o in obs),
 }
 
 
