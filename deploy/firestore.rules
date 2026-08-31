@@ -47,32 +47,20 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------------------
-    // Grades. The negative space this whole system is arranged around.
+    // There is deliberately NO grades block in this file.
     // ---------------------------------------------------------------------------------
     //
-    // Writable only by an authenticated human session. No pipeline identity can reach this
-    // collection on any path: not the analyst, not the validator, not render, not delivery.
+    // This file guards the EVENTS database. A `match /grades/{...}` block used to sit here,
+    // allowing authenticated-human writes -- a leftover from the abandoned single-database
+    // design, and a shadow grades path: a browser session could have written grade-shaped
+    // documents into the events database, where nothing legitimate would ever read them but
+    // where their existence alone would falsify "grades live in exactly one place." An
+    // external review caught it as the one spot where this repo's discipline slipped.
     //
-    // The condition is `request.auth.token.firebase.sign_in_provider != 'custom'` rather than
-    // simply `request.auth != null` because a service account authenticating with a custom
-    // token would satisfy the weaker check. The instructor signs in as a person.
-    match /grades/{gradeId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null
-                            && request.auth.token.firebase.sign_in_provider != 'custom'
-                            && request.resource.data.actor == request.auth.uid;
-      allow delete: if false;
-
-      // History is create-only. A grade can be changed; the record that it was changed
-      // cannot be removed. An instructor revising a grade is ordinary and expected; an
-      // instructor's revision history disappearing is not.
-      match /history/{entryId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null
-                      && request.auth.token.firebase.sign_in_provider != 'custom';
-        allow update, delete: if false;
-      }
-    }
+    // Grades have exactly one home: the karani-grades database, guarded by
+    // deploy/firestore-grades.rules. In THIS database, grades fall through to the default
+    // deny below -- unreachable from a browser for the same reason they are unreachable
+    // from a pipeline service account.
 
     // Default deny. Anything not named above is unreachable rather than accidentally open.
     match /{document=**} {

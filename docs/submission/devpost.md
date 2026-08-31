@@ -5,9 +5,10 @@ text description field.
 
 **Category:** The Taskmaster
 
-> **Before submitting:** every bracketed `[MEASURED: …]` placeholder below must be replaced
-> with a real number from `docs/metrics.json`. If a number was not measured, delete the
-> sentence — do not estimate it. This is the same rule the repository enforces on itself.
+> **Before submitting:** the two remaining `[URL]` slots (video, blog) must be filled with
+> the published links. Every number below already exists in `docs/metrics.json` with its
+> measurement method attached; anything that was not measured has been deleted rather than
+> estimated. This is the same rule the repository enforces on itself.
 
 ---
 
@@ -22,8 +23,11 @@ Instructor grading time is dominated by evidence-gathering, not judgment: close-
 submission, locating the passages that justify feedback, writing that feedback, forty times
 per assignment.
 
-`[MEASURED: baseline min/submission]` → `[MEASURED: with Karani]`, measured on a real rubric
-across `[MEASURED: n]` timed sessions. Method in the README.
+The friction reduction has **not been measured** — the planned stopwatch sessions (KAR-205)
+did not happen before the deadline, and this project's own rule is that an unmeasured number
+is deleted, not estimated. What *is* measured: the pipeline turns one submission into five
+criterion-level observations with validated citations in a single unattended pass, and every
+per-run figure below comes from `docs/metrics.json` with its measurement method attached.
 
 Stated honestly: Karani applies to **essay-shaped assignments — two to five per instructor per
 semester** — not to problem sets, exams, multiple choice, code, or quantitative work. The

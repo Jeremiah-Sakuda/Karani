@@ -18,7 +18,7 @@ deployed timings and the friction figures are not, and must not be spoken.
 | Billing on the deploy project | ✅ green | `asili-xprize-2026` |
 | Credentials for live Vertex calls | ✅ green | Karani borrows the gcloud CLI token when ADC is absent |
 | Pinned model IDs resolve | ✅ green | both verified against live Vertex AI |
-| Recorded run + offline cache | ✅ green | 187 responses committed; `make demo` replays 21/21 |
+| Recorded run + offline cache | ✅ green | 187 responses committed (two runs: p1 93, p2 94); `make demo` replays 94 of 94 — 21 analysis + 73 entailment |
 | Validation numbers measured | ✅ green | 85.1% first-attempt (63/74), 6.8% entailment disagreement — both derived from the committed log, not typed |
 | s07 injection catch | ✅ green | fires on the live run |
 | One escalated sheet for the hero edit | ✅ green | s01 and s02 both have escalations in the recorded run |

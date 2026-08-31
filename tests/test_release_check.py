@@ -30,7 +30,11 @@ def test_submission_check_refuses_to_pass_without_live_evidence():
     result = run_release_check("--submission")
     assert result.returncode == 1
     assert "Devpost draft still contains" in result.stdout
-    assert "required submission metric is absent" in result.stdout
+    # This used to also assert "required submission metric is absent". The scale run and
+    # beat timings were measured on the deployed path on 2026-08-31, so that line is
+    # legitimately gone; what must keep the gate red until the moment of submission is the
+    # publication evidence -- the video and the still-unfilled URLs.
+    assert "Demo video" in result.stdout
 
 
 def test_static_docket_renderer_accepts_the_documented_relative_output_path(tmp_path):

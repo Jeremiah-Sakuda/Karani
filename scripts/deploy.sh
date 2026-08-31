@@ -121,6 +121,26 @@ gcloud run deploy karani-docket \
   --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},KARANI_STORE_BACKEND=firestore,KARANI_INSTRUCTOR_TOKEN=${INSTRUCTOR_TOKEN}" \
   --port=8080
 
+# The arena (KAR-419): public bring-your-own-essay page. Runs under the ANALYSIS identity,
+# not the docket's -- it invokes Vertex, which is exactly what karani-analysis is for and
+# exactly what karani-docket is denied. max-instances=1 keeps the in-memory rate limits
+# meaningful and caps the worst-case spend to one container's ceiling.
+gcloud run deploy karani-arena \
+  --image="$IMAGE" \
+  --region="$REGION" \
+  --service-account="karani-analysis@${PROJECT}.iam.gserviceaccount.com" \
+  --allow-unauthenticated \
+  --min-instances=0 \
+  --max-instances=1 \
+  --memory=1Gi \
+  --timeout=120 \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},KARANI_MODEL_BACKEND=vertex" \
+  --command=python \
+  --args="-m,karani.arena" \
+  --port=8080
+
+ARENA_URL=$(gcloud run services describe karani-arena --region="$REGION" --format='value(status.url)')
+
 URL=$(gcloud run services describe karani-docket --region="$REGION" --format='value(status.url)')
 
 say "Deployed"
@@ -130,6 +150,9 @@ unlock        $URL/unlock?token=$INSTRUCTOR_TOKEN
               ^ the only place this token is printed. Reads are public; editing and
                 ratification need this link once, then a session cookie for 12 hours.
 challenge     $URL/challenge     (free, unmetered, no login -- KAR-412)
+arena         $ARENA_URL         (paste any essay; the real pipeline runs on it -- KAR-419)
+brief         $URL/brief         (the morning work-list -- KAR-418)
+replay        $URL/replay        (the night, watched -- KAR-416)
 job           gcloud run jobs execute karani-run --region=$REGION
 scheduler     gcloud scheduler jobs describe karani-nightly --location=$REGION
 

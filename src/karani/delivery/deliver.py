@@ -130,6 +130,15 @@ def deliver(
             )
         )
 
+    # The morning brief rides with every delivery (KAR-418): the ratified drop is the
+    # one place the instructor is guaranteed to look, so the work-list goes there rather
+    # than waiting to be visited.
+    from karani.docket.brief import brief_page
+
+    brief_path = out_dir / f"{run.run_id}-morning-brief.html"
+    brief_path.write_text(brief_page(run), encoding="utf-8")
+    result.files.append(brief_path.name)
+
     csv_text = build_csv(run, grades)
     csv_path = out_dir / f"{run.run_id}-grades.csv"
     csv_path.write_text(csv_text, encoding="utf-8")

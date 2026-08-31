@@ -26,6 +26,7 @@ because ingest must not depend on a model call being available.
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass
 from typing import Literal
@@ -127,9 +128,20 @@ def _parse(raw: str) -> dict:
 
 
 def gemma_triage_ollama(
-    text: str, *, model: str = MODEL_TRIAGE, host: str = "http://localhost:11434"
+    text: str, *, model: str = MODEL_TRIAGE, host: str = ""
 ) -> TriageDecision | None:
-    """The dev tier: a genuinely local Ollama daemon. Returns None if it is not running."""
+    """The dev tier: a genuinely local Ollama daemon. Returns None if it is not running.
+
+    The host honours KARANI_OLLAMA_URL, and that override exists because of a real incident:
+    the endpoint was hardcoded, the probe had failed instantly for the project's whole life
+    (no Ollama installed), and the moment an Ollama daemon appeared on the machine, every
+    "offline" pipeline test and `make demo` silently went live — thirty-plus seconds of
+    real Gemma generation per submission, in a suite whose promise is "no model calls", with
+    a nondeterministic model deciding triage in what is supposed to be a byte-stable replay.
+    Auto-detection that changes behaviour based on which daemons happen to be running is
+    spooky action; the offline paths now pin the URL to an unreachable port on purpose.
+    """
+    host = host or os.environ.get("KARANI_OLLAMA_URL", "http://localhost:11434")
     try:
         import urllib.error
         import urllib.request

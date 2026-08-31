@@ -26,7 +26,7 @@ over one named instructor's real grading load.
 
 - First commit: recorded in the README on the first push.
 - History is unsquashed and never rebased; the public commit log is the evidence.
-- `git log --before=2026-08-03` audit: **CLOSED for this repository.** All 33 commits
+- `git log --before=2026-08-03` audit: **CLOSED for this repository.** Every commit
   fall inside the Submission Period; the first is dated 2026-08-12, and `git log
   --before=2026-08-03` returns 0 commits. Reproduce with:
 
@@ -100,4 +100,4 @@ real company or person is named as a bad actor in any fixture, test, comment, or
 | Text description in PRD §1.3 order | **OPEN** |
 | Bonus: blog post with the created-for-this-hackathon language | **OPEN** |
 | Bonus: social post carrying `#AllThingsAgenticHackathon` | **OPEN** |
-| Bonus: additional Google AI model (Gemma triage tier) | **OPEN — and not a one-liner.** Gemma is not a managed Vertex publisher model (404 in `global` and `us-central1`), so it needs either a local Ollama install (~3.3 GB) or a Model Garden GPU endpoint. See FINDINGS.md. The tier is built and falls back honestly under its own name |
+| Bonus: additional Google AI model (Gemma second reader) | **CLOSED 2026-08-31 — and load-bearing, not decorative.** `gemma3:4b` via local Ollama is layer 5 of citation validation (KAR-417): it re-answers the entailment question for every citation the Gemini verify tier accepts, cross-family, and disagreement escalates. Ten real Gemma verdicts recorded on the scholarship run, committed to `fixtures/cache/`, replayed by `make demo-scholarship`; every accepted observation on that run carries `second_reader: true`. (Gemma is not a managed Vertex publisher model — 404 in `global` and `us-central1` — which is why the tier runs locally; see FINDINGS.md) |

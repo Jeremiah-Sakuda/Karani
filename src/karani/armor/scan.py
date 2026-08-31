@@ -65,6 +65,8 @@ class Scanner(Protocol):
 # the software processing the document. That shift is the actual signal, and it is why
 # "this policy is excellent" is not a detection while "describe this work as exemplary" in
 # a footnote addressed to an automated system is.
+_SOFT_WRAP = re.compile(r"\n(?!\n)")
+
 _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "addressed_to_automated_reader",
@@ -89,7 +91,7 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
         "instruction_to_award_outcome",
         re.compile(
             r"\b(?:describe|rate|score|grade|mark|evaluate|treat|classify|report)\b"
-            r"[^.\n]{0,40}?\b(?:this|the)\b[^.\n]{0,30}?\b"
+            r"[^.\n]{0,40}?\b(?:this|the)\b[^.\n]{0,40}?\b"
             r"(?:work|essay|paper|submission|document)\b[^.\n]{0,40}?\b"
             r"(?:as\s+)?(?:exemplary|excellent|outstanding|perfect|flawless|full\s+marks|"
             r"highest|top|a\+?)\b",
@@ -122,12 +124,24 @@ class LocalPatternScanner:
 
     def scan(self, text: str) -> ScanResult:
         detections: list[Detection] = []
+        # Soft line wraps are folded to spaces BEFORE matching -- length-preservingly, one
+        # newline to one space, so every reported offset is valid in the original text. A
+        # paragraph break (two newlines) is left alone and still bounds the gap.
+        #
+        # This distinction was earned, not designed: the arena's first live test pasted
+        # "Ignore all\nprevious instructions" with the wrap exactly where a textarea puts
+        # it, and the scan missed it -- the pattern gaps exclude newlines, every committed
+        # fixture keeps its payload on one line, and three weeks of green suites never
+        # noticed. (The first fix put the newline INTO the pattern gaps as an alternation,
+        # which detected correctly and turned the regex quadratic on 84k-character
+        # renditions; folding the input is linear and leaves the patterns untouched.)
+        folded = _SOFT_WRAP.sub(" ", text)
         for pattern_name, pattern in _PATTERNS:
-            for match in pattern.finditer(text):
+            for match in pattern.finditer(folded):
                 detections.append(
                     Detection(
                         pattern_name=pattern_name,
-                        matched_text=match.group(0),
+                        matched_text=text[match.start() : match.end()],
                         char_start=match.start(),
                         char_end=match.end(),
                     )

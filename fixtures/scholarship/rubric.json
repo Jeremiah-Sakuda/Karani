@@ -1,0 +1,27 @@
+{
+  "rubric_id": "makena-fund-2026",
+  "assignment": "Makena Community Fund, 2026 cycle -- personal statement for the regional STEM scholarship. Applicants describe their goals, their financial circumstances, their community involvement, and how the award changes what is possible for them. 500-800 words.",
+  "_note": "A different domain on the same invariant. A scholarship committee's real work is judgment over evidence: did the applicant articulate need, or merely assert it? Is the community involvement specific and verifiable, or decorative? Karani prepares that evidence, cited to the applicant's own words, and cannot rank one applicant against another -- there is no field that could hold the ranking. Criteria describe what a reviewer looks for evidence OF; none carries a scale or a weight.",
+  "criteria": [
+    {
+      "criterion_id": "c1",
+      "name": "Goals and their coherence",
+      "description": "A concrete educational or career goal is stated, and the statement's account of past choices connects to it rather than sitting beside it."
+    },
+    {
+      "criterion_id": "c2",
+      "name": "Financial need, articulated",
+      "description": "The applicant's financial circumstances are described specifically enough to evaluate -- amounts, obligations, constraints -- rather than asserted in general terms."
+    },
+    {
+      "criterion_id": "c3",
+      "name": "Community involvement, evidenced",
+      "description": "Involvement is named with specifics a reviewer could verify: what was done, where, over what period, with what result."
+    },
+    {
+      "criterion_id": "c4",
+      "name": "What the award changes",
+      "description": "The statement identifies what this specific award makes possible that is otherwise not -- a mechanism, not gratitude."
+    }
+  ]
+}

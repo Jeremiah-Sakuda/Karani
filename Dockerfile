@@ -21,6 +21,10 @@ RUN pip install --upgrade pip \
 COPY src/ ./src/
 COPY fixtures/ ./fixtures/
 COPY deploy/ ./deploy/
+# The corpus generator plus its seed inputs. The scale corpus itself is gitignored (it is a
+# pure function of the committed seed), so a scale run inside this container regenerates it
+# with `--generate-scale-corpus` rather than expecting a directory only a dev machine has.
+COPY scripts/gen_scale_corpus.py ./scripts/gen_scale_corpus.py
 
 # Non-root. The container reads submissions and writes events; it has no reason to be root,
 # and the delivery identity in particular touches an instructor's real Drive.

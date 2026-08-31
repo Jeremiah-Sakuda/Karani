@@ -68,12 +68,46 @@ downstream system, and no aggregate can be computed.
 An auto-grader's product is the score. Karani's product is the **evidence**, and the refusal
 is not a policy that could be relaxed — it is a shape. There is no field on any record in this
 system that could hold a grade. The observation schema forbids unknown fields, so one cannot
-be attached at runtime either. The public challenge box answers with the schema itself — run `make docket-recorded` and open
-`/challenge`. (Not yet hosted: the deploy has not been run.)
+be attached at runtime either. The public challenge box answers with the schema itself — hosted at the deployed docket's
+`/challenge`, or locally via `make docket-recorded`.
 
 **Karani's output is designed to be contestable.** Supersession instead of mutation. Diff
 across runs. Absence as a first-class value. Escalation instead of guessing. An appeal packet
 that re-verifies against its own event range.
+
+## The pattern: verdict-incapable agents
+
+Grading is the instance. The architecture is a **pattern**, and it is worth naming because it
+applies anywhere an organization wants an agent's endurance without ceding it the judgment:
+an agent that prepares the case and *cannot* hold the pen.
+
+The pattern has four load-bearing parts, and all four have to be structural rather than
+behavioral, or the incapability is just a system prompt someone can outgrow:
+
+1. **A record schema with no field for the verdict**, closed against extension at runtime.
+2. **The verdict's storage placed outside every agent identity's reach** — an IAM boundary,
+   not a convention.
+3. **Absence as a first-class finding**, excluded from retry, so the agent is never under
+   pressure to manufacture what it did not find.
+4. **Every claim carrying its own falsifiable citation**, validated by layers the agent does
+   not control — including, as of KAR-417, a **second model family**: `gemma3:4b` re-answers
+   the entailment question for every citation the Gemini verify tier accepts, so no single
+   model's judgment turns a draft into evidence.
+
+The same shape fits hiring screens (evidence of qualifications, no ranking), claims
+adjustment (evidence against policy terms, no settlement amount), content moderation
+(evidence against each rule, no takedown decision), and peer review triage. In each, the
+expensive honest work is evidence-gathering, the liability is the verdict, and the boundary
+between them is exactly where an agent's authority should end.
+
+**Proven, not asserted:** the same pipeline, unchanged, runs a second domain in this
+repository. `make demo-scholarship` analyses three scholarship personal statements under a
+different rubric ([fixtures/scholarship/](fixtures/scholarship/)) — offline, from a committed
+live recording with real Gemma second-reader verdicts. The generic, specific-about-nothing
+statement draws `no_evidence` on financial need and community involvement, because there is
+genuinely nothing to cite; the applicant who *explicitly declines* to detail family finances
+gets that refusal cited as the evidence, and the judgment about what reticence means is left
+where it belongs — with the committee. Different domain, same refusal, zero code changes.
 
 ## The honesty invariants — enforced by structure, not by prose
 

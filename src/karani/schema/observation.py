@@ -116,6 +116,9 @@ class Verification(BaseModel):
     positional: bool | None = None
     quote_check: bool | None = None
     entailment: bool | None = None
+    # Layer 5 (KAR-417): the cross-family second reader. None = not run -- the deployed
+    # nightly job has no local Gemma and records exactly that. Never readable as a pass.
+    second_reader: bool | None = None
 
 
 class Review(BaseModel):

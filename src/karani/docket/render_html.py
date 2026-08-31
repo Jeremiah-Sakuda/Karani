@@ -230,7 +230,7 @@ def overview_page(run: RenderedRun) -> str:
 
 <div class="notice">Karani prepares evidence. It cannot grade. There is no score on this page,
 no ranking, and no field anywhere in the system that could hold one —
-<a href="/challenge">try to make it give you a grade</a>.</div>
+<a href="/challenge">try to make it give you a grade</a> — or <a href="/replay">watch the night replay itself</a> — and start the day at the <a href="/brief">morning brief</a>.</div>
 {reference_banner}
 
 <h2>Terminal outcomes, one unattended run</h2>

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 from datetime import UTC, datetime
 from typing import Any
 
@@ -40,7 +41,9 @@ from karani.render import RenderedRun, render
 from karani.schema.events import Event, Step
 
 
-def build_app(rendered: RenderedRun, store: Any | None = None) -> FastAPI:
+def build_app(
+    rendered: RenderedRun, store: Any | None = None, events: list[Any] | None = None
+) -> FastAPI:
     app = FastAPI(title="Karani docket", docs_url=None, redoc_url=None)
     # The write gate. When `KARANI_INSTRUCTOR_TOKEN` is set, the two endpoints that append
     # events -- /edit and /ratify -- require a cookie obtained by presenting that token once
@@ -74,7 +77,13 @@ def build_app(rendered: RenderedRun, store: Any | None = None) -> FastAPI:
         """Whether this request may append to the log."""
         if not instructor_token:
             return True
-        return request.cookies.get("karani_instructor") == instructor_token
+        # Constant-time comparison. `==` short-circuits on the first differing byte, which
+        # in principle lets a remote caller time their way toward the token. Impractical to
+        # exploit over Cloud Run jitter, but compare_digest costs nothing and a security
+        # review should not have to argue about it.
+        return secrets.compare_digest(
+            request.cookies.get("karani_instructor", ""), instructor_token
+        )
 
     @app.get("/unlock", response_class=HTMLResponse)
     def unlock(token: str = "") -> Any:
@@ -120,6 +129,33 @@ def build_app(rendered: RenderedRun, store: Any | None = None) -> FastAPI:
     @app.get("/student/{student_id}", response_class=HTMLResponse)
     def student(student_id: str) -> HTMLResponse:
         return HTMLResponse(student_page(current(), student_id))
+
+    @app.get("/brief", response_class=HTMLResponse)
+    def brief() -> HTMLResponse:
+        """The morning brief (KAR-418): work-list first, data set second."""
+        from karani.docket.brief import brief_page
+
+        return HTMLResponse(brief_page(current()))
+
+    @app.get("/replay", response_class=HTMLResponse)
+    def replay() -> HTMLResponse:
+        """The glass-box replay (KAR-416). Metadata only; payloads never leave the server."""
+        from karani.docket.replay import replay_page
+
+        run = current()
+        run_events = events
+        if run_events is None and state["store"] is not None:
+            run_events = state["store"].read_run(run.run_id)
+        if not run_events:
+            return HTMLResponse(
+                page(
+                    "Karani — replay",
+                    "<p class='sub'>No raw events are available to this docket instance, "
+                    "so there is nothing to replay. The artifact view is unaffected.</p>",
+                ),
+                status_code=404,
+            )
+        return HTMLResponse(replay_page(run.run_id, run_events))
 
     @app.get("/challenge", response_class=HTMLResponse)
     def challenge_get() -> HTMLResponse:
@@ -457,9 +493,14 @@ def build_app(rendered: RenderedRun, store: Any | None = None) -> FastAPI:
     return app
 
 
-def serve(rendered: RenderedRun, port: int = 8080, store: Any | None = None) -> None:
+def serve(
+    rendered: RenderedRun,
+    port: int = 8080,
+    store: Any | None = None,
+    events: list[Any] | None = None,
+) -> None:
     import uvicorn
 
     print(f"\ndocket  http://localhost:{port}")
     print(f"        http://localhost:{port}/challenge   (try to make it give you a grade)\n")
-    uvicorn.run(build_app(rendered, store), host="0.0.0.0", port=port, log_level="warning")
+    uvicorn.run(build_app(rendered, store, events), host="0.0.0.0", port=port, log_level="warning")

@@ -65,6 +65,14 @@ def _offline_environment(request: pytest.FixtureRequest) -> None:
     # `make demo-live`'s environment cannot leak into a test run.
     os.environ["KARANI_STORE_BACKEND"] = "local"
     os.environ["KARANI_MODEL_BACKEND"] = "cache"
+    # Port 9 is the discard port: connection refused in microseconds. Without this, a test
+    # machine that happens to run Ollama turns every pipeline test into a real local-Gemma
+    # session -- the triage tier auto-probes localhost:11434 -- and the suite's "no model
+    # calls" promise quietly becomes "no model calls unless a daemon is up". Found the day
+    # Ollama was first installed on the author's machine: the 15-second suite took minutes,
+    # and one e2e test failed because a live nondeterministic model was deciding triage
+    # inside what is supposed to be a deterministic replay.
+    os.environ["KARANI_OLLAMA_URL"] = "http://127.0.0.1:9"
     yield
     for var, value in saved.items():
         if value is not None:

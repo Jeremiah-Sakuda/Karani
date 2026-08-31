@@ -43,6 +43,26 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     settings = Settings.from_env()
     source_dir = Path(args.source)
+
+    if args.generate_scale_corpus:
+        # The scale corpus is reproducible from its committed seed and therefore gitignored
+        # -- which means it is also absent from the deployed container image. The first
+        # attempt at a scale run on Cloud Run failed on exactly that: the job was handed
+        # `--source fixtures/scale` and the directory did not exist anywhere but the
+        # author's machine. Regenerating in-process is deterministic (same seed, same
+        # bytes, verified by full-tree diff), so the corpus the job analyses is the same
+        # corpus a clean clone gets from `make scale`.
+        import subprocess as _subprocess
+
+        _subprocess.run(
+            [
+                sys.executable,
+                str(REPO_ROOT / "scripts" / "gen_scale_corpus.py"),
+                "--out",
+                str(source_dir),
+            ],
+            check=True,
+        )
     rubric = Path(args.rubric) if args.rubric else source_dir / "rubric.json"
     if not rubric.exists():
         rubric = REPO_ROOT / "fixtures" / "rubric.json"
@@ -266,7 +286,7 @@ def cmd_docket(args: argparse.Namespace) -> int:
                 f"no runs in the store; serving the committed recorded run ({len(events)} events)"
             )
 
-    serve(render(run_id, events), port=int(args.port), store=store)
+    serve(render(run_id, events), port=int(args.port), store=store, events=events)
     return 0
 
 
@@ -358,6 +378,11 @@ def main(argv: list[str] | None = None) -> int:
 
     run = sub.add_parser("run", help="ingest, analyse, validate, render")
     run.add_argument("--source", default="fixtures")
+    run.add_argument(
+        "--generate-scale-corpus",
+        action="store_true",
+        help="regenerate the seed-reproducible scale corpus into --source before ingesting",
+    )
     run.add_argument("--rubric", default="")
     run.add_argument("--run-id", default="")
     run.add_argument("--workers", type=int, default=8)

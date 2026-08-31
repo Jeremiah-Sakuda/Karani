@@ -4,7 +4,7 @@ PY ?= python3.12
 VENV := .venv
 BIN := $(VENV)/bin
 
-.PHONY: help venv demo demo-live demo-emulator record-cache docket-golden docket-recorded dev-run compliance test lint fmt scale release-check submission-check bootstrap deploy static-docket screenshots clean
+.PHONY: help venv demo demo-live demo-emulator record-cache docket-golden docket-recorded demo-scholarship dev-run compliance test lint fmt scale release-check submission-check bootstrap deploy static-docket screenshots clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -38,6 +38,7 @@ demo: $(BIN)/python ## Full pipeline over committed fixtures. Zero credentials, 
 	KARANI_SOURCE=local \
 	KARANI_CACHE_BACKEND=file \
 	KARANI_MODEL_BACKEND=cache \
+	KARANI_OLLAMA_URL=http://127.0.0.1:9 \
 	$(BIN)/python -m karani.cli run --source fixtures --offline --open-docket
 
 record-cache: $(BIN)/python ## Run live ONCE and record every model response into fixtures/cache/.
@@ -65,6 +66,16 @@ demo-emulator: $(BIN)/python ## Higher-fidelity demo against the Firestore emula
 	KARANI_MODEL_BACKEND=cache \
 	$(BIN)/python -m karani.cli run --source fixtures --offline
 	docker compose down
+
+demo-scholarship: $(BIN)/python ## The same pipeline, a different domain: scholarship review, offline, with the Gemma second reader replayed.
+	KARANI_STORE_BACKEND=local \
+	KARANI_SOURCE=local \
+	KARANI_CACHE_BACKEND=file \
+	KARANI_MODEL_BACKEND=cache \
+	KARANI_OLLAMA_URL=http://127.0.0.1:9 \
+	KARANI_SECOND_READER=1 \
+	$(BIN)/python -m karani.cli run --source fixtures/scholarship --offline \
+	  --run-id run-scholarship-p2 --open-docket
 
 docket-recorded: $(BIN)/python ## Serve the docket over the recorded live run. No model, no cloud.
 	KARANI_STORE_BACKEND=local \

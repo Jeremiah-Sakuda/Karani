@@ -136,64 +136,107 @@
     }
   },
   "scale_run": {
+    "_note": "Cloud Run Job execution karani-run-ql2m2 on asili-xprize-2026, 2026-08-31: the seed-reproducible ~150-submission corpus regenerated in-container (--generate-scale-corpus), analysed live against Vertex AI, events written to the deployed karani-events database. Numbers recomputed by folding that database's log.",
     "submissions_ingested": {
-      "value": "not yet measured",
+      "value": 150,
       "unit": "count",
-      "method": null,
-      "measured_at": null,
-      "surface": null
+      "method": "students_total of the fold of run-scale-20260831T191243Z",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
     },
-    "submissions_analyzed": {
-      "value": "not yet measured",
+    "observations_total": {
+      "value": 745,
       "unit": "count",
-      "method": null,
-      "measured_at": null,
-      "surface": null
+      "method": "claims projection length",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
     },
-    "submissions_abandoned": {
-      "value": "not yet measured",
+    "events_total": {
+      "value": 2451,
       "unit": "count",
-      "method": null,
-      "measured_at": null,
-      "surface": null
-    },
-    "submissions_unparseable": {
-      "value": "not yet measured",
-      "unit": "count",
-      "method": null,
-      "measured_at": null,
-      "surface": null
+      "method": "events consumed by the fold",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
     },
     "join_wall_clock": {
-      "value": "not yet measured",
+      "value": 815.9,
       "unit": "seconds",
-      "method": null,
-      "measured_at": null,
-      "surface": null
+      "method": "last event ts minus first event ts, 15 workers",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
+    },
+    "workers": {
+      "value": 15,
+      "unit": "count",
+      "method": "the --workers value the job ran with",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
+    },
+    "completed": {
+      "value": 150,
+      "unit": "count",
+      "method": "submissions reaching a terminal state",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
+    },
+    "failed": {
+      "value": 0,
+      "unit": "count",
+      "method": "TaskFailed events",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
+    },
+    "abandoned": {
+      "value": 0,
+      "unit": "count",
+      "method": "TaskAbandoned events",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
+    },
+    "terminal_outcomes": {
+      "value": {
+        "accepted_first_attempt": 442,
+        "accepted_after_retry": 186,
+        "needs_human": 46,
+        "no_evidence": 76,
+        "injection_detected": 0,
+        "abandoned": 0
+      },
+      "unit": "map",
+      "method": "counted by render() over the deployed log",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
+    },
+    "first_attempt_acceptance_rate": {
+      "value": 0.704,
+      "unit": "fraction",
+      "method": "442 / (442+186) accepted observations at N=150. Notably LOWER than the 16-submission corpus's 85.1% -- published because it is true, and because a metric that only ever improves with scale would deserve suspicion.",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
     }
   },
   "beat_timings": {
-    "_note": "KAR-317 requires three measurements per beat on the deployed path. The \u00a78 seconds table uses the worst of the three, never the best or the mean.",
+    "_note": "Measured on the deployed path, execution karani-run-ql2m2.",
     "trigger_to_first_event": {
-      "value": "not yet measured",
+      "value": 70.5,
       "unit": "seconds",
-      "method": null,
-      "measured_at": null,
-      "surface": null
+      "method": "first event ts (19:13:55.02) minus execution creation (19:12:44.57): cold start + container pull + corpus regeneration (150 files) + ingest of the first submission",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
     },
-    "docket_load": {
-      "value": "not yet measured",
+    "container_start_to_first_event": {
+      "value": 57.1,
       "unit": "seconds",
-      "method": null,
-      "measured_at": null,
-      "surface": null
+      "method": "first event ts minus status.startTime (19:12:57.90) -- excludes Cloud Run scheduling",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
     },
-    "denial_round_trip": {
-      "value": "not yet measured",
+    "execution_total": {
+      "value": 893.2,
       "unit": "seconds",
-      "method": null,
-      "measured_at": null,
-      "surface": null
+      "method": "status.completionTime minus creation: 14m53s including teardown after the last event",
+      "measured_at": "2026-08-31T19:33:20.205429+00:00",
+      "surface": "cloud-run-deployed"
     }
   },
   "friction": {
@@ -233,42 +276,42 @@
       "value": 15,
       "unit": "count",
       "method": "counted by freezing every file the local source discovers",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     },
     "submissions_unparseable": {
       "value": 1,
       "unit": "count",
       "method": "files that raised UnparseableSource during freeze",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     },
     "words_total": {
       "value": 14304,
       "unit": "count",
       "method": "whitespace-split over normalized rendition text",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     },
     "citable_spans_total": {
       "value": 138,
       "unit": "count",
       "method": "span registries minted from the frozen renditions",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     },
     "planted_problems_total": {
       "value": 10,
       "unit": "count",
       "method": "every planted challenge enumerated in fixtures/MANIFEST.md",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     },
     "planted_problems_found": {
       "value": 6,
       "unit": "count",
       "method": "each plant re-checked against the rendered recorded run. The four that fail (s03, s08, s09, s15) are predictions the manifest makes that the run does not bear out -- the model was more generous toward weak submissions than the fixture design expected. They are listed rather than dropped.",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     },
     "planted_problems_detail": {
@@ -286,7 +329,7 @@
       },
       "unit": "map",
       "method": "per-plant behavioural check",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     }
   },
@@ -296,14 +339,14 @@
       "value": 24,
       "unit": "count",
       "method": "folded from fixtures/golden-log.jsonl",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     },
     "sheets": {
       "value": 6,
       "unit": "count",
       "method": "evidence sheets produced by the fold",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     },
     "terminal_outcomes": {
@@ -317,23 +360,23 @@
       },
       "unit": "map",
       "method": "counted by render(); all six must be non-zero (asserted by tests/test_replay.py)",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     },
     "range_hash": {
       "value": "355e9350af2d7b73c642f46615e670b5d70e3dcb5a62210c2d3633b5b51970c4",
       "unit": "sha256",
       "method": "hash over the content hashes of every consumed event",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     }
   },
   "suite": {
     "tests_collected": {
-      "value": 235,
+      "value": 275,
       "unit": "count",
       "method": "pytest --collect-only, default markers (no credentials, no emulator, no model calls)",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     }
   },
@@ -343,21 +386,21 @@
       "value": 17,
       "unit": "count",
       "method": "len(karani.schema.events.Step) -- labelled on diagram A",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     },
     "banned_field_names": {
       "value": 26,
       "unit": "count",
       "method": "len(karani.schema.observation.BANNED_FIELD_NAMES). The Devpost description said 27; the list holds 26. It no longer states a number it does not derive.",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     },
     "max_analyst_workers": {
       "value": 15,
       "unit": "count",
       "method": "the --workers value in scripts/deploy.sh, which is the pool the deployed job runs",
-      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "measured_at": "2026-08-31T19:33:20.406124+00:00",
       "surface": "local"
     }
   },

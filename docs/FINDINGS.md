@@ -434,3 +434,17 @@ staleness is bounded and *visible* (the run id is printed in the page header), a
 re-resolving per request or on a timer — touches the entrypoint on deploy day for a property
 no demo path exercises. It is the kind of limitation this project prefers stated over
 silently half-fixed.
+
+## The events database carried a shadow grades path in its rules
+
+**Found by an external judge panel, fixed and redeployed 2026-08-31.** `deploy/firestore.rules`
+— the file guarding the **events** database — still contained a `match /grades/{gradeId}`
+block allowing authenticated-human writes: a leftover from the abandoned single-database
+design. A browser session could have written grade-shaped documents into the events database.
+Nothing legitimate would ever have read them there, but their existence alone would falsify
+"grades live in exactly one place," and the panel called it what it was: the one spot where
+this repository's discipline slipped. The block is removed; in the events database, grades
+now fall through to the default deny — unreachable from a browser for the same reason they
+are unreachable from a pipeline service account. Both databases' releases were redeployed and
+read back the same afternoon.
+

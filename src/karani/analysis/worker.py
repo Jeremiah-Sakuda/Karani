@@ -50,6 +50,7 @@ from karani.schema.rendition import Rendition
 from karani.triage.gemma import triage
 from karani.validate.citation import validate_citation
 from karani.validate.entailment import check_entailment
+from karani.validate.second_reader import check_second_reader, second_reader_enabled
 
 
 class MalformedModelOutput(ValueError):
@@ -382,6 +383,59 @@ def analyze_submission(
                     )
                 )
                 continue
+
+            # --- layer 5: the cross-family second reader (KAR-417) ----------------------
+            # Same entailment question, put to gemma3:4b. Entailment is the one layer where
+            # the checker could share the generator's blind spots; a second model family
+            # narrows that. Disagreement escalates and is never retried, for KAR-310's
+            # reason. Unavailable -> verification.second_reader stays None: not run, and
+            # readable as exactly that.
+            if second_reader_enabled():
+                second = check_second_reader(
+                    claim=obs.text,
+                    passage=span.text_from(rendition.text),
+                    submission=rendition.text,
+                    cache=cache,
+                    rendition_id=rendition.rendition_id,
+                )
+                if second.checked:
+                    verified = verified.model_copy(
+                        update={
+                            "verification": verified.verification.model_copy(
+                                update={"second_reader": second.confirmed}
+                            )
+                        }
+                    )
+                if second.disagreement:
+                    escalated = verified.model_copy(
+                        update={
+                            "needs_human": True,
+                            "needs_human_reason": (
+                                f"second reader ({second.model_id}) could not confirm the "
+                                f"citation supports this claim: {second.reason}"
+                            ),
+                        }
+                    )
+                    settled[obs.criterion_id] = escalated
+                    outcome.needs_human.append(escalated)
+                    outcome.events.append(
+                        Event.build(
+                            run_id=run_id,
+                            step=Step.NEEDS_HUMAN_REVIEW,
+                            item_id=item_id,
+                            ts=ts,
+                            attempt=attempt,
+                            payload={
+                                "student_id": ref.student_id,
+                                "criterion_id": obs.criterion_id,
+                                "observation_id": obs.observation_id,
+                                "anomaly_kind": "second_reader_disagreement",
+                                "reason": second.reason,
+                                "observation": escalated.model_dump(mode="json"),
+                            },
+                        )
+                    )
+                    continue
 
             settled[obs.criterion_id] = verified
             outcome.accepted.append(verified)

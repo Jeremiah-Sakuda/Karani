@@ -215,15 +215,23 @@ def submission_findings() -> list[Finding]:
         ("scale_run.submissions_ingested", ("scale_run", "submissions_ingested")),
         ("scale_run.join_wall_clock", ("scale_run", "join_wall_clock")),
         ("beat_timings.trigger_to_first_event", ("beat_timings", "trigger_to_first_event")),
-        (
-            "friction.baseline_minutes_per_submission",
-            ("friction", "baseline_minutes_per_submission"),
-        ),
-        (
-            "friction.with_karani_minutes_per_submission",
-            ("friction", "with_karani_minutes_per_submission"),
-        ),
     )
+    # The friction numbers (KAR-205) were required here while the Devpost copy promised
+    # them. The stopwatch sessions never happened, the copy now says so and cites no
+    # number, and the honest state is "not measured, and not claimed" -- so the gate
+    # enforces CONSISTENCY instead: if any submission surface starts quoting a
+    # minutes-per-submission figure again, the metric becomes required again.
+    friction_measured = is_measured(
+        value_at(metrics, ("friction", "baseline_minutes_per_submission"))
+    )
+    if not friction_measured and "min/submission" in devpost:
+        findings.append(
+            Finding(
+                "error",
+                "devpost quotes a minutes-per-submission figure but friction was never measured",
+            )
+        )
+
     for label, metric_path in required_live_metrics:
         if not is_measured(value_at(metrics, metric_path)):
             findings.append(Finding("error", f"required submission metric is absent: {label}"))
