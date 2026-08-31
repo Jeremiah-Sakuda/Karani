@@ -415,3 +415,22 @@ Recorded because the checklist previously implied a one-liner, and an entrant re
 4pm on the deadline would have discovered otherwise at the worst possible moment. The tier
 itself is real and tested; it reports `gemma_available: false` and falls back to deterministic
 heuristics **under their own name**, never borrowing Gemma's.
+
+## The docket resolves "latest run" once, at container start
+
+**Recorded 2026-08-31, on the deployed instance.** `cmd_docket` asks the store for the run
+list at boot and serves that run for the life of the container. Two consequences a reviewer
+flagged and this file should own:
+
+- A run finishing while a container is warm does not appear until the next cold start. With
+  `min-instances=0` the docket scales to zero between visits, so in practice the nightly
+  03:00 run is visible by morning — but "in practice" is doing work in that sentence, and a
+  heavily-visited docket would pin a warm instance to an old run.
+- Two concurrent instances could serve two different runs if a run completed between their
+  cold starts. Same cause.
+
+Not fixed today, deliberately: the render is a pure fold over an append-only log, so the
+staleness is bounded and *visible* (the run id is printed in the page header), and the fix —
+re-resolving per request or on a timer — touches the entrypoint on deploy day for a property
+no demo path exercises. It is the kind of limitation this project prefers stated over
+silently half-fixed.
