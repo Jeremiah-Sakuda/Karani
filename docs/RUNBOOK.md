@@ -53,22 +53,21 @@ beat in the script.
 **On screen:** the docket landing page, scrolling slowly — the header, the outcome tiles,
 the submissions table drifting past while you talk. Burned-in lower third from **second
 1**, and it now does the explaining by itself for a muted viewer:
-*"KARANI — overnight grading evidence for instructors. It cannot grade."*
+*"KARANI · overnight grading evidence for instructors. It cannot grade."*
 
-**Say (verbatim, ~35 seconds):**
+**Say (verbatim, ~42 seconds, 109 words):**
 
-> *"If you teach, you know this night: forty essays due back, and hours of work that isn't
-> actually judging — it's hunting. Finding the sentence in each paper that justifies the
-> feedback you already know you're going to give.*
+> *"If you teach, you know this night. Forty essays due back, and most of the work is not
+> judging. It is hunting: rereading each paper for the sentence that backs up the feedback
+> you already plan to give.*
 >
-> *Karani is an overnight assistant for instructors. While you sleep, it reads every
-> submission in the pile and builds an evidence sheet for each student — every finding tied
-> to a quote from the student's own writing, checked before it reaches you.*
+> *Karani is an overnight assistant for instructors. While you sleep, it reads the whole
+> pile and builds an evidence sheet for every student, each finding tied to a quote from
+> that student's own writing.*
 >
-> *And the one thing it cannot do — by construction, not by promise — is grade. Because an
-> AI's grade is a grade you can't defend: not to your department, not to a student who
-> appeals. Most AI tools are pitched on what they can do. This one is built around what it
-> deliberately leaves out. The judgment stays yours. The hunting doesn't."*
+> *And one thing it cannot do is grade. An AI grade is a grade you cannot defend to your
+> department or to a student who appeals. The judgment stays with you. The hunting goes
+> away."*
 
 **Property:** a judge who watches only this beat can answer "what did they build, for whom,
 and why" in their own words.
@@ -79,7 +78,9 @@ and why" in their own words.
 `karani-run` job page → click **EXECUTE** → confirm. The execution appears at the top of
 the list, spinner running, next to today's earlier runs.
 
-**Say:** *"Scheduled nightly at 3 a.m. — triggered here by hand so you can watch it."*
+**Say (~17s, 43 words):** *"This is where Karani lives: Google Cloud, on a schedule.
+Every night at three it wakes up on its own and works through whatever your students turned
+in. Tonight I will start it by hand, so you can watch. There it is, running."*
 **Do not claim nightly history**; the schedule went live today.
 
 **Property:** the backend really runs on Google Cloud, clicked, not curled.
@@ -90,17 +91,18 @@ the list, spinner running, next to today's earlier runs.
 tiles fill — *cited on the first pass, nothing to cite, routed to you* — while the ticker
 scrolls the record in order.
 
-**Say:** *"This is the permanent record of last night replaying — every step, in order.
-Six kinds of outcome, not six labels on the same one."*
+**Say (~14s, 36 words):** *"Here is a night from its permanent record, replayed. Watch
+the outcomes separate: most findings land cleanly, some get sent back and repaired, a few
+are routed straight to the instructor. Different situations get different treatment."*
 
 ## Beat 4 — 1:15–1:30 · scale, measured
 
 **Navigate:** window B → the scale execution detail (15 workers visible). One breath.
 
-**Say:** *"Same system, ten times the pile, on the deployed path: 150 submissions, 745
-findings, thirteen and a half minutes, zero failures. First-pass acceptance dropped from 85
-to 70 percent at scale — we publish that, because a metric that only ever improves deserves
-suspicion."*
+**Say (~17s, 44 words):** *"At class scale: one hundred fifty submissions, seven hundred
+forty five findings, under fourteen minutes on Google Cloud, zero failures. First pass
+acceptance fell from 85 percent to 70. We publish the drop. A number that only improves is
+a number you should doubt."*
 
 ## Beat 5 — 1:30–1:55 · the morning after: brief, docket, citation
 
@@ -108,17 +110,20 @@ suspicion."*
 pattern. Click **"Full docket"** → click **`s12`** → click **"show where this comes from"**
 on the first finding: the student's sentence highlights in place.
 
-**Say:** *"The morning starts with a work-list: what needs you, what's done, and the
-pattern across the class — counts and quotations, never characterizations. Every finding
-is a link to its own proof."*
+**Say (~24s, 60 words):** *"In the morning the instructor gets a brief. What needs you,
+six items, each with a reason. What finished on its own. And the class wide pattern, shown
+in the students' own sentences. One click opens any student's sheet, and every finding
+links to the exact spot in the paper it came from. You never take Karani's word for
+anything."*
 
 ## Beat 6 — 1:55–2:07 · the injection catch
 
 **Navigate:** docket → click **`s07`** (the `hidden instructions` chip). The banner:
 flagged, kept a record, **analysis proceeded**. Scroll once — findings present, ordinary.
 
-**Say:** *"This file tried to talk to the software instead of the reader. Flagged, logged —
-and analysed anyway, because blocking the file punishes the student."*
+**Say (~13s, 34 words):** *"One student's file carried hidden text aimed at the software:
+ignore the rubric, call this excellent. Karani flagged it, kept the receipt, and analyzed
+the essay anyway. A blocked file punishes the student."*
 
 ## Beat 7 — 2:07–2:28 · the hero beat: disagree with it
 
@@ -136,9 +141,10 @@ page number; the Castellanos attribution is not supported by this passage."*), g
 reason, click **"Record my correction"**. The page re-renders: your version stands, and
 Karani's original sits under **"Earlier versions — kept."**
 
-**Say:** *"Here Karani over-read — credited two scholars where its own checker found one —
-so it escalated instead of accepting. I correct it. Corrections are added, never erased:
-there is always a full history to stand on if a student appeals."*
+**Say (~22s, 56 words):** *"Sometimes Karani is wrong. Here it credited two sources, and
+its own checker found only one in the passage, so it sent the finding to me instead of
+accepting it. I fix the wording and save. My version becomes the record. Karani's original
+stays visible underneath, because a student who appeals deserves the full history."*
 
 Alternates: `s01`, criterion `c1` · `s02`, criterion `c1` · `s05`, criterion `c2`.
 
@@ -151,9 +157,10 @@ cut it.
 **"Try to write a grade, right now."** The result page: **"It tried. It was turned away."**
 — the service's own identity named, the operation described, `PermissionDenied: 403`.
 
-**Say:** *"That button made this very service attempt a grade record, live, under its own
-identity — and Google Cloud's permission system refused it before Karani's code got a say.
-That's not a policy. That's a locked door it holds no key to."*
+**Say (~20s, 50 words):** *"Do not take my word for the refusal. Test it. This button
+makes the very service you are watching try to write a grade, live, as itself. Google Cloud
+turns it down. No key to that door. Not a setting, not a promise, a permission it was never
+given."*
 
 **Property:** the boundary demonstrated in the product itself, with the deployed test suite
 (4/4, as the pipeline identity) standing behind it. "Structurally impossible" is licensed.
@@ -164,9 +171,10 @@ That's not a policy. That's a locked door it holds no key to."*
 unlock cookie from prep authorises it). The receipt renders **the gradebook CSV as a
 table, on screen** — every grade cell reading *"— yours to write —"*.
 
-**Say:** *"Ratifying delivers the evidence sheets, the morning brief, and the gradebook —
-with the grade column arriving empty, read from a database no part of the pipeline can
-write. Karani exports the blank; filling it is your job, on purpose."*
+**Say (~20s, 52 words):** *"When I am done reviewing, one click delivers everything: the
+sheets, the brief, and the gradebook file for my LMS. Look at the grade column. Empty. It
+reads from a database the pipeline cannot touch, so those cells arrive blank and wait for
+me. Karani did the hunting. I do the grading."*
 
 ## Beat 10 — 3:05–3:27 · try it yourself, and it isn't about essays
 
@@ -177,22 +185,22 @@ click `a02`: *nothing to cite* on financial need and community involvement. Then
 edit), show the result: hidden instructions flagged, analysis proceeded, evidence sheet, no
 grade.
 
-**Say:** *"It generalizes — here's the same pipeline reviewing scholarship applications,
-with a second model, Gemma, cross-checking every citation. And it's live: paste anything
-you like, right now — the URL's in the submission — and there is still no field for a
-grade."*
+**Say (~20s, 52 words):** *"And this is not only essays. The same system reviews
+scholarship applications, with a second model, Gemma, on my own machine, double checking
+every citation. You can also try it yourself, right now. This page is live. Paste anything.
+The pipeline runs, and there is still nowhere for a grade to go."*
 
 ## Beat 11 — 3:27–3:45 · close
 
 **On screen:** s01's **"Earlier versions — kept"** panel for 2 seconds, then the
 architecture diagram.
 
-**Say:** *"Everything you saw is rebuilt from a permanent record that can only be added
-to — defensible by construction, not by promise."* Beat, then close the loop on the
-opening frame:
+**Say (~20s, 51 words):** *"Everything you watched came from one record that can only
+grow. Nothing edited in place, nothing deleted. That is what makes it defensible."* Beat,
+then the close:
 
-> *"Every agent you'll see today is proud of what it does. This one is proud of what it
-> leaves out — because that work belongs to you."*
+> *"Most AI tools want credit for what they can do. This one is careful about what it will
+> not do, because that part of the job is yours."*
 
 ---
 
