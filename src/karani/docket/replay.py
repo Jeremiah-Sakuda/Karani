@@ -56,15 +56,15 @@ def replay_page(run_id: str, events: list[Event]) -> str:
     data = replay_events_json(run_id, events)
     body = f"""
 <header class="top">
-  <h1>The night, replayed</h1>
-  <p class="sub mono">run {_e(run_id)} · every event of the committed log, in fold order ·
-     timestamps compressed to ~40s and labelled</p>
-  <p class="thesis">Six kinds of consequence from one unattended run — watched, not asserted.</p>
+  <h1>Last night, replayed</h1>
+  <p class="sub">Every step of the run, in the order it was recorded — compressed to about
+     forty seconds, with the real clock shown. <span class="mono">run {_e(run_id)}</span></p>
+  <p class="thesis">"It ran unattended" is a claim. Watching it is the receipt.</p>
 </header>
 
-<div class="notice">This is a replay of the append-only event log, not a simulation. Only
-step names, item ids, and timestamps are shown; event payloads carry generated text and do
-not leave the server. <a href="/">Back to the docket</a>.</div>
+<div class="notice">A replay of the permanent record, not a simulation. Only step names
+and timestamps are shown here — the findings themselves live on the evidence sheets.
+<a href="/">Back to the overnight review</a>.</div>
 
 <div class="panel" style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
   <button id="play" style="font-size:1.05rem;padding:.45rem 1.1rem">&#9654; Replay the night</button>
@@ -85,12 +85,12 @@ not leave the server. <a href="/">Back to the docket</a>.</div>
 const DATA = {data};
 const TILE_STEPS = {json.dumps(sorted(_TILE_STEPS))};
 const LABELS = {{
-  ObservationAccepted: "accepted",
-  NoEvidenceRecorded: "no evidence located",
-  NeedsHumanReview: "needs human review",
-  InjectionDetected: "injection flagged",
-  TaskAbandoned: "abandoned",
-  ObservationRejected: "rejected, feedback returned",
+  ObservationAccepted: "finding cited",
+  NoEvidenceRecorded: "nothing to cite — recorded",
+  NeedsHumanReview: "routed to you",
+  InjectionDetected: "hidden instructions flagged",
+  TaskAbandoned: "set aside",
+  ObservationRejected: "citation failed a check — sent back",
 }};
 const counts = {{}};
 const tiles = document.getElementById("tiles");

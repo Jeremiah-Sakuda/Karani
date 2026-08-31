@@ -212,3 +212,43 @@ def test_there_is_no_path_from_an_observation_to_a_grade():
             assert not any("observation" in a for a in args), (
                 f"karani.grades.{node.name} accepts an observation"
             )
+
+
+# --- the boundary page (KAR-420) and the scholarship exhibit (KAR-422) -------------------
+
+
+def test_boundary_page_serves_without_any_token(locked: TestClient):
+    response = locked.get("/boundary")
+    assert response.status_code == 200
+    assert "Can Karani write a grade?" in response.text
+
+
+def test_boundary_attempt_with_no_credentials_reports_honestly(locked: TestClient):
+    """Locally there are no cloud credentials; the page must say the attempt could not run
+    from here rather than pretending a denial happened. Nothing may read as success."""
+    response = locked.post("/boundary")
+    assert response.status_code == 200
+    assert "Could not attempt from here" in response.text
+    assert "nothing was written" in response.text.lower()
+    assert "BOUNDARY FAILURE" not in response.text
+
+
+def test_scholarship_exhibit_serves_and_is_read_only(locked: TestClient):
+    overview = locked.get("/scholarship")
+    assert overview.status_code == 200
+    assert "different job, the same clerk" in overview.text.lower()
+    # internal navigation stays inside the exhibit
+    assert "href='/scholarship/a01'" in overview.text.replace('"', "'")
+
+    sheet = locked.get("/scholarship/a02")
+    assert sheet.status_code == 200
+    assert "nothing to cite" in sheet.text.lower()
+
+    # the exhibit accepts no writes, with or without the token
+    locked.get("/unlock", params={"token": TOKEN})
+    assert locked.post("/scholarship-readonly").status_code == 403
+
+
+def test_scholarship_findings_show_the_second_reader(locked: TestClient):
+    sheet = locked.get("/scholarship/a01").text
+    assert '"second_reader": true' in sheet or "&quot;second_reader&quot;: true" in sheet

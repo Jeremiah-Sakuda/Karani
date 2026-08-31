@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import os
 import secrets
+import uuid
 from datetime import UTC, datetime
 from typing import Any
 
@@ -129,6 +130,166 @@ def build_app(
     @app.get("/student/{student_id}", response_class=HTMLResponse)
     def student(student_id: str) -> HTMLResponse:
         return HTMLResponse(student_page(current(), student_id))
+
+    @app.get("/scholarship", response_class=HTMLResponse)
+    @app.get("/scholarship/{student_id}", response_class=HTMLResponse)
+    def scholarship(student_id: str = "") -> HTMLResponse:
+        """The second domain, one click away (KAR-422): scholarship review, same pipeline.
+
+        Served from the committed recorded log (`fixtures/scholarship-run.jsonl`) baked
+        into the image — real Gemini analysis and real local-Gemma second-reader verdicts,
+        replayed. The point is provable generality: a different rubric, a different kind of
+        document, and the same refusal, with zero code changes. Cached at first request;
+        the fold is pure, so once is enough.
+        """
+        from karani.config import REPO_ROOT
+        from karani.store.local import read_jsonl_log
+
+        if "scholarship_run" not in state:
+            log_path = REPO_ROOT / "fixtures" / "scholarship-run.jsonl"
+            if not log_path.exists():
+                return HTMLResponse(
+                    page(
+                        "Karani — scholarship",
+                        "<p class='sub'>The scholarship fixture is not present in this build.</p>",
+                    ),
+                    status_code=404,
+                )
+            state["scholarship_run"] = render("run-scholarship-p2", read_jsonl_log(log_path))
+        sch = state["scholarship_run"]
+
+        banner = (
+            '<div class="notice"><strong>A different job, the same clerk.</strong> These are '
+            "scholarship personal statements reviewed against a scholarship rubric — not "
+            "essays. Same pipeline, zero code changes: evidence is cited to the applicant's "
+            "own words, absence is recorded as a finding, and there is still no field that "
+            "could rank one applicant against another. Every accepted citation here was "
+            "also cross-checked by a second, locally-run model (Gemma) — see any finding's "
+            "\u201chow this finding was produced\u201d panel. "
+            '<a href="/">Back to the essay review</a>.</div>'
+        )
+        html_page = student_page(sch, student_id) if student_id else overview_page(sch)
+        # The shared renderers link to the main run's routes; rebase the ones that must stay
+        # inside the scholarship view, and disable the write actions -- this view is a
+        # committed exhibit, not tonight's live run.
+        html_page = html_page.replace("href='/student/", "href='/scholarship/")
+        html_page = html_page.replace('action="/edit"', 'action="/scholarship-readonly"')
+        html_page = html_page.replace('action="/ratify"', 'action="/scholarship-readonly"')
+        html_page = html_page.replace("<header", banner + "<header", 1)
+        return HTMLResponse(html_page)
+
+    @app.post("/scholarship-readonly", response_class=HTMLResponse)
+    def scholarship_readonly() -> HTMLResponse:
+        return HTMLResponse(
+            page(
+                "Karani — exhibit",
+                "<p class='sub'>The scholarship view is a committed exhibit of the recorded "
+                "run, so corrections and delivery are disabled here. The live essay review "
+                "on the <a href='/'>overnight review</a> accepts both.</p>",
+            ),
+            status_code=403,
+        )
+
+    @app.get("/boundary", response_class=HTMLResponse)
+    def boundary_get() -> HTMLResponse:
+        """The denial, as a page (KAR-420): watch this service try to write a grade.
+
+        The video used to prove the grades boundary in a terminal — impersonated token,
+        Python heredoc, PermissionDenied in a monospace wall. True, and unreadable to the
+        instructor it protects. This page runs the same class of attempt live, server-side,
+        under this service's own identity, and shows the refusal in words. The pytest gate
+        (`-m deployed`, against the analysis identity specifically) remains the release
+        proof; this is the same boundary made watchable.
+        """
+        return HTMLResponse(
+            page(
+                "Karani — the boundary",
+                """
+<nav class="crumbs"><a href="/">← back to the overnight review</a></nav>
+<header class="top">
+  <h1>Can Karani write a grade?</h1>
+  <p class="sub">Not "does it choose not to." Grades live in a separate database that every
+  part of Karani is locked out of — by Google Cloud's permission system, not by good
+  intentions. This page lets you watch it try.</p>
+</header>
+<div class="panel">
+  <p>Press the button and this very service — the one rendering the page you are reading —
+  will attempt to create a grade record, live, using its own identity. If the boundary
+  holds, Google Cloud refuses it before Karani's own code gets a say.</p>
+  <form method="post" action="/boundary" style="margin-top:.8rem">
+    <button type="submit">Try to write a grade, right now</button>
+  </form>
+</div>
+<div class="panel">
+  <p class="sub">Why this matters: a tool that promises not to grade can break its promise
+  in an update. A tool with no field for a grade, writing to a database it cannot reach,
+  needs a redesign to break it — and a redesign is visible in a way a prompt change never
+  is.</p>
+</div>
+""",
+            )
+        )
+
+    @app.post("/boundary", response_class=HTMLResponse)
+    def boundary_attempt() -> HTMLResponse:
+        from karani.config import GRADES_DATABASE, Settings
+
+        settings = Settings.from_env()
+        identity = "this docket service"
+        try:
+            import google.auth
+            from google.cloud import firestore as _fs
+
+            credentials, _ = google.auth.default()
+            identity = getattr(credentials, "service_account_email", identity) or identity
+            client = _fs.Client(project=settings.project or None, database=GRADES_DATABASE)
+            probe = f"boundary-page-{uuid.uuid4().hex}"
+            client.collection("grades").document(probe).create({"grade": "A"})
+        except Exception as exc:  # noqa: BLE001 - the refusal IS the result
+            kind = type(exc).__name__
+            if kind == "PermissionDenied":
+                verdict = f"""
+<div class="notice"><strong>Refused.</strong> Google Cloud denied the write before it
+reached the database.</div>
+<div class="panel">
+  <p><strong>Who asked:</strong> <span class="mono">{_e(identity)}</span></p>
+  <p><strong>What it tried:</strong> create a brand-new grade record in the grades
+  database — the exact operation its permissions would have to allow for Karani to ever
+  write a grade.</p>
+  <p><strong>The answer:</strong> <span class="mono">{_e(kind)}: 403</span>.
+  Not a policy, not a setting Karani checks — a locked door it does not hold a key to.</p>
+</div>"""
+            else:
+                verdict = f"""
+<div class="notice"><strong>Could not attempt from here.</strong> This copy of the docket
+has no cloud credentials at all (<span class="mono">{_e(kind)}</span>) — common when
+running locally. On the hosted docket this attempt runs live and is refused by IAM. Either
+way: nothing was written.</div>"""
+            return HTMLResponse(
+                page(
+                    "Karani — the boundary",
+                    f"""
+<nav class="crumbs"><a href="/boundary">← try again</a> · <a href="/">overnight review</a></nav>
+<header class="top"><h1>It tried. It was turned away.</h1></header>
+{verdict}
+<div class="panel"><p class="sub">This attempt ran during your page request, under the
+service's own identity — no simulation, no screenshot. The same denial is asserted against
+the analysis pipeline's identity by the deployed test suite on every release.</p></div>
+""",
+                )
+            )
+        # If we ever get here, the write SUCCEEDED and the central claim is false.
+        # Say so at maximum volume rather than styling it away.
+        return HTMLResponse(
+            page(
+                "Karani — BOUNDARY FAILURE",
+                "<h1>The write succeeded. The boundary is broken.</h1>"
+                "<p>A pipeline-side identity just created a grade record. Do not trust this "
+                "deployment until the IAM bindings are re-verified "
+                "(<span class='mono'>pytest -m deployed</span>).</p>",
+            ),
+            status_code=500,
+        )
 
     @app.get("/brief", response_class=HTMLResponse)
     def brief() -> HTMLResponse:
@@ -412,7 +573,7 @@ def build_app(
         Karani exports blank cells rather than filling them in.
         """
         from karani.config import REPO_ROOT, Settings
-        from karani.delivery.deliver import deliver
+        from karani.delivery.deliver import build_csv, deliver
 
         if not writes_open(request):
             return HTMLResponse(
@@ -457,20 +618,56 @@ def build_app(
             state["run"] = render(run.run_id, state["store"].read_run(run.run_id))
 
         files = "".join(f"<li class='mono'>{f}</li>" for f in result.files)
+
+        # The gradebook CSV, rendered right here (KAR-421). The empty grade column used to
+        # be provable only by opening the exported file in Finder -- invisible on the hosted
+        # docket, whose container filesystem nobody can browse, and a terminal beat in the
+        # demo. The one fact this whole system is arranged around deserves to be LOOKED AT,
+        # so the delivery receipt shows the table itself, empty cells and all.
+        import csv as _csv
+        import io as _io
+
+        csv_rows = list(_csv.reader(_io.StringIO(build_csv(run, grades))))
+        header, body_rows = csv_rows[0], csv_rows[1:]
+        grade_col = header.index("grade") if "grade" in header else -1
+        csv_head = "".join(f"<th>{_e(h)}</th>" for h in header)
+        csv_body = "".join(
+            "<tr>"
+            + "".join(
+                (
+                    f"<td class='sub'><em>{_e(cell) or '— yours to write —'}</em></td>"
+                    if i == grade_col
+                    else f"<td>{_e(cell)}</td>"
+                )
+                for i, cell in enumerate(cells)
+            )
+            + "</tr>"
+            for cells in body_rows
+        )
+
         return HTMLResponse(
             page(
                 "Karani — delivered",
                 f"""
-<nav class="crumbs"><a href="/">← class docket</a></nav>
-<h1>Delivered</h1>
-<p class="sub">{len(result.files)} artifact(s) written to
-   <span class="mono">{result.destination}</span>, and
-   {len(result.events)} <span class="mono">ArtifactDelivered</span> event(s) appended.</p>
+<nav class="crumbs"><a href="/">← back to the overnight review</a></nav>
+<header class="top">
+  <h1>Delivered</h1>
+  <p class="sub">{len(result.files)} file(s) written to
+     <span class="mono">{result.destination}</span> — the evidence sheets, the
+     <a href="/brief">morning brief</a>, and the gradebook CSV below.</p>
+</header>
+
+<h2>The gradebook, as exported</h2>
+<div class="panel scroll">
+  <table><tr>{csv_head}</tr>{csv_body}</table>
+  <p class="sub" style="margin-top:.8rem"><strong>{result.grades_absent} grade cell(s) are
+  empty.</strong> They are read from a database no part of the pipeline can write, so they
+  arrive blank until you fill them. Karani exports the blank rather than inventing the
+  number — that is the whole point of it.</p>
+</div>
+
+<h2>Files delivered</h2>
 <div class="panel"><ul>{files}</ul></div>
-<div class="notice">The CSV's grade column is populated exclusively from
-   <span class="mono">grades/</span> — written by the instructor's own session, and unwritable
-   by every pipeline identity. {result.grades_absent} row(s) have an empty grade cell because
-   no grade has been entered. Karani exports the blank rather than filling it.</div>
 """,
             )
         )

@@ -27,98 +27,122 @@ from typing import Any
 from karani.render import RenderedRun
 from karani.validate.lint import lint_generated_text, lint_quote
 
-# Ordered by position in the pipeline, never best-to-worst.
+# Ordered by position in the pipeline, never best-to-worst. The voice is the instructor's,
+# not the engineer's: "cited on the first pass" and "accepted_first_attempt" are the same
+# fact, but only one of them belongs on a screen a professor reads before coffee. The
+# technical names live on in the data, the tests, and the details panels.
 OUTCOME_LABELS = {
-    "accepted_first_attempt": "accepted, first attempt",
-    "accepted_after_retry": "accepted after retry",
-    "no_evidence": "no evidence located",
-    "needs_human": "needs human review",
-    "injection_detected": "injection flagged",
-    "abandoned": "excluded from run",
+    "accepted_first_attempt": "cited on the first pass",
+    "accepted_after_retry": "cited after a second look",
+    "no_evidence": "nothing to cite — recorded as a finding",
+    "needs_human": "needs your review",
+    "injection_detected": "hidden instructions flagged",
+    "abandoned": "set aside — did not finish in time",
 }
 
 ANOMALY_LABELS = {
-    "no_evidence": "No evidence located",
-    "injection_detected": "Injected instruction",
-    "entailment_disagreement": "Entailment disagreement",
-    "attempt_cap_reached": "Attempt cap reached",
-    "parse_failure": "Unreadable submission",
-    "task_failed": "Task failed",
-    "abandoned": "Abandoned at join",
-    "needs_human": "Needs human review",
+    "no_evidence": "Nothing to cite",
+    "injection_detected": "Hidden instructions in the file",
+    "entailment_disagreement": "The checker disagreed with the finding",
+    "attempt_cap_reached": "Citations kept failing checks",
+    "parse_failure": "File would not open",
+    "task_failed": "Processing failed",
+    "abandoned": "Did not finish in time",
+    "needs_human": "Needs your review",
 }
 
 CSS = """
+/* Eleza's design system, applied to the docket -- same startup, same paper. Tokens lifted
+   from tryeleza.com's :root on 2026-08-31: ink #16181d, paper #fafaf8, green #1e6b4e,
+   line rgba(138,143,152,.35); Spectral for display, Instrument Sans for body, JetBrains
+   Mono for micro-labels; sharp corners throughout.
+   The docket's own hard constraint survives the reskin: ONE accent hue, outcomes told
+   apart by label and border weight, never by a colour a reader could rank. */
 :root{
-  --bg:#fbfaf8; --panel:#fff; --ink:#1a1a1a; --muted:#6b6b6b; --line:#e2ded8;
-  --accent:#3f4a5a; --chip:#f2efea; --mark:#e8e2d6;
+  --bg:#fafaf8; --panel:#ffffff; --ink:#16181d; --muted:#8a8f98;
+  --line:rgba(138,143,152,.35); --accent:#1e6b4e; --accent-ink:#fafaf8;
+  --chip:rgba(30,107,78,.06); --mark:#f3ecce;
 }
 @media (prefers-color-scheme:dark){
-  :root{ --bg:#141414; --panel:#1c1c1c; --ink:#ececec; --muted:#9a9a9a; --line:#2e2e2e;
-         --accent:#aab6c6; --chip:#242424; --mark:#3a3524; }
+  :root{ --bg:#16181d; --panel:#1b1e24; --ink:#ecedee; --muted:#8a8f98;
+         --line:rgba(138,143,152,.28); --accent:#4d9b76; --accent-ink:#16181d;
+         --chip:rgba(77,155,118,.10); --mark:#4a4229; }
 }
-:root[data-theme=dark]{ --bg:#141414;--panel:#1c1c1c;--ink:#ececec;--muted:#9a9a9a;
-  --line:#2e2e2e;--accent:#aab6c6;--chip:#242424;--mark:#3a3524; }
-:root[data-theme=light]{ --bg:#fbfaf8;--panel:#fff;--ink:#1a1a1a;--muted:#6b6b6b;
-  --line:#e2ded8;--accent:#3f4a5a;--chip:#f2efea;--mark:#e8e2d6; }
+:root[data-theme=dark]{ --bg:#16181d;--panel:#1b1e24;--ink:#ecedee;--muted:#8a8f98;
+  --line:rgba(138,143,152,.28);--accent:#4d9b76;--accent-ink:#16181d;
+  --chip:rgba(77,155,118,.10);--mark:#4a4229; }
+:root[data-theme=light]{ --bg:#fafaf8;--panel:#ffffff;--ink:#16181d;--muted:#8a8f98;
+  --line:rgba(138,143,152,.35);--accent:#1e6b4e;--accent-ink:#fafaf8;
+  --chip:rgba(30,107,78,.06);--mark:#f3ecce; }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);
-  font:16px/1.62 ui-serif,Georgia,"Times New Roman",serif;}
-a{color:inherit}
-.wrap{max-width:60rem;margin:0 auto;padding:2.5rem 1.25rem 5rem}
-header.top{border-bottom:1px solid var(--line);padding-bottom:1.25rem;margin-bottom:2rem}
-h1{font-size:1.5rem;margin:0 0 .35rem;letter-spacing:-.01em}
-h2{font-size:1.05rem;margin:2.5rem 0 .85rem;letter-spacing:.06em;text-transform:uppercase;
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);font-weight:600}
+  font:16px/1.62 "Instrument Sans",system-ui,-apple-system,Arial,sans-serif;}
+a{color:var(--accent);
+  text-decoration:underline;text-decoration-color:rgba(30,107,78,.35);
+  text-underline-offset:2px}
+.wrap{max-width:58rem;margin:0 auto;padding:2.5rem 1.25rem 5rem}
+.brand{font:500 11px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.35em;
+  color:var(--ink);margin:0 0 2.2rem}
+header.top{border-bottom:1px solid var(--line);padding-bottom:1.4rem;margin-bottom:2rem}
+h1{font:500 2.4rem/1.12 Spectral,Georgia,serif;
+  margin:0 0 .5rem;letter-spacing:-.045em}
+h2{font:500 11px/1.4 "JetBrains Mono",ui-monospace,monospace;margin:2.8rem 0 .9rem;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 h3{font-size:1rem;margin:0 0 .3rem}
-.sub{color:var(--muted);font-size:.9rem;margin:0}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem}
-.thesis{font-style:italic;color:var(--muted);margin:.4rem 0 0}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:.4rem;
-  padding:1.1rem 1.25rem;margin-bottom:.85rem}
+.sub{color:var(--muted);font-size:.92rem;margin:0}
+.mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,monospace;font-size:.8rem}
+.thesis{font:italic 500 1.05rem/1.5 Spectral,Georgia,serif;color:var(--muted);
+  margin:.5rem 0 0}
+.panel{background:var(--panel);border:1px solid var(--line);
+  padding:1.15rem 1.3rem;margin-bottom:.9rem}
 .grid{display:grid;gap:.75rem}
 @media(min-width:46rem){.grid.two{grid-template-columns:1fr 1fr}
   .grid.three{grid-template-columns:repeat(3,1fr)}}
-.count{font-family:ui-monospace,monospace;font-size:1.6rem;line-height:1.1}
-.count-label{color:var(--muted);font-size:.8rem;
-  font-family:ui-monospace,monospace;letter-spacing:.03em}
+.count{font:500 2rem/1.1 Spectral,Georgia,serif;letter-spacing:-.02em}
+.count-label{color:var(--muted);font-size:.84rem;margin-top:.2rem}
 /* Outcome chips: one hue, distinguished by border weight and label. Never by colour
    semantics -- see the module docstring. */
-.chip{display:inline-block;font-family:ui-monospace,monospace;font-size:.72rem;
-  padding:.12rem .5rem;border-radius:.2rem;background:var(--chip);
+.chip{display:inline-block;font:500 10px/1.7 "JetBrains Mono",ui-monospace,monospace;
+  letter-spacing:.1em;text-transform:uppercase;
+  padding:.14rem .55rem;background:var(--chip);
   border:1px solid var(--line);color:var(--muted);white-space:nowrap}
-.chip.strong{border-width:2px;color:var(--ink)}
-.obs{border-left:2px solid var(--line);padding:.1rem 0 .1rem 1rem;margin:1.1rem 0}
-.obs.flagged{border-left-style:dashed}
-blockquote{margin:.55rem 0;padding:.5rem .85rem;border-left:2px solid var(--line);
-  background:var(--chip);font-size:.95rem}
-mark{background:var(--mark);color:inherit;padding:.05rem 0}
-table{width:100%;border-collapse:collapse;font-size:.9rem}
-th,td{text-align:left;padding:.45rem .6rem;border-bottom:1px solid var(--line);
+.chip.strong{border-color:var(--accent);color:var(--ink)}
+.obs{border-left:2px solid var(--line);padding:.15rem 0 .15rem 1.05rem;margin:1.4rem 0}
+.obs.flagged{border-left-color:var(--accent)}
+blockquote{margin:.6rem 0;padding:.65rem 1rem;border-left:2px solid var(--accent);
+  background:var(--chip);
+  font:400 1.02rem/1.55 Spectral,Georgia,serif}
+mark{background:var(--mark);color:inherit;padding:.05rem .1rem}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{text-align:left;padding:.5rem .65rem;border-bottom:1px solid var(--line);
   vertical-align:top}
-th{font-family:ui-monospace,monospace;font-size:.74rem;text-transform:uppercase;
-  letter-spacing:.05em;color:var(--muted);font-weight:600}
+th{font:500 10px/1.6 "JetBrains Mono",ui-monospace,monospace;text-transform:uppercase;
+  letter-spacing:.14em;color:var(--muted)}
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-details>summary{cursor:pointer;color:var(--accent);font-size:.85rem;
-  font-family:ui-monospace,monospace}
-.locus{white-space:pre-wrap;font-size:.9rem;background:var(--chip);padding:.85rem;
-  border-radius:.3rem;max-height:26rem;overflow:auto;margin-top:.6rem}
-.notice{border:1px dashed var(--line);padding:.55rem .8rem;border-radius:.3rem;
-  color:var(--muted);font-size:.85rem;font-family:ui-monospace,monospace}
-nav.crumbs{font-family:ui-monospace,monospace;font-size:.8rem;margin-bottom:1.5rem}
+details>summary{cursor:pointer;color:var(--accent);font-size:.88rem}
+.locus{white-space:pre-wrap;font-size:.9rem;background:var(--chip);padding:.9rem;
+  max-height:26rem;overflow:auto;margin-top:.6rem;border:1px solid var(--line)}
+.notice{border:1px solid var(--line);border-left:2px solid var(--accent);
+  background:var(--panel);padding:.75rem 1rem;
+  color:var(--ink);font-size:.92rem}
+nav.crumbs{font:500 11px/1 "JetBrains Mono",ui-monospace,monospace;
+  letter-spacing:.08em;margin-bottom:1.6rem}
 footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);
-  color:var(--muted);font-size:.82rem}
+  color:var(--muted);font-size:.84rem}
 .layers{counter-reset:l;list-style:none;padding:0;margin:.8rem 0}
-.layers li{counter-increment:l;padding:.5rem 0 .5rem 2.2rem;position:relative;
+.layers li{counter-increment:l;padding:.5rem 0 .5rem 2.3rem;position:relative;
   border-bottom:1px solid var(--line)}
-.layers li::before{content:counter(l);position:absolute;left:0;top:.5rem;
-  font-family:ui-monospace,monospace;font-size:.8rem;color:var(--muted);
-  border:1px solid var(--line);border-radius:50%;width:1.5rem;height:1.5rem;
+.layers li::before{content:counter(l);position:absolute;left:0;top:.55rem;
+  font:500 .75rem/1 "JetBrains Mono",monospace;color:var(--accent);
+  border:1px solid var(--accent);width:1.5rem;height:1.5rem;
   display:grid;place-items:center}
-input[type=text]{width:100%;padding:.6rem .7rem;border:1px solid var(--line);
-  border-radius:.3rem;background:var(--panel);color:var(--ink);font:inherit;font-size:.95rem}
-button{padding:.55rem 1rem;border:1px solid var(--line);border-radius:.3rem;
-  background:var(--chip);color:var(--ink);font:inherit;font-size:.9rem;cursor:pointer}
+input[type=text],textarea{width:100%;padding:.65rem .75rem;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);font:inherit;font-size:.95rem}
+input[type=text]:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+button{padding:.65rem 1.3rem;border:1px solid var(--ink);
+  background:var(--ink);color:var(--bg);font:500 .92rem "Instrument Sans",system-ui,sans-serif;
+  cursor:pointer;letter-spacing:.01em}
+button:hover{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 """
 
 
@@ -127,10 +151,16 @@ def _e(text: Any) -> str:
 
 
 def page(title: str, body: str) -> str:
+    # The Google Fonts link matches tryeleza.com's faces. Every rule in CSS carries local
+    # fallbacks (Georgia, system-ui, ui-monospace), so the offline demo and any judge
+    # behind a firewall get the same layout in the fallback faces rather than a broken one.
     return f"""<!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,500&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <title>{_e(title)}</title><style>{CSS}</style></head>
-<body><div class="wrap">{body}</div></body></html>"""
+<body><div class="wrap"><p class="brand">KARANI</p>{body}</div></body></html>"""
 
 
 def _outcome_of(obs: dict[str, Any]) -> str:
@@ -178,10 +208,14 @@ def overview_page(run: RenderedRun) -> str:
     for sheet in run.sheets:
         chips = []
         if sheet.injection_flagged:
-            chips.append('<span class="chip strong">injection flagged</span>')
+            chips.append('<span class="chip strong">hidden instructions</span>')
         if sheet.status == "INSUFFICIENT":
-            chips.append('<span class="chip strong">insufficient</span>')
-        if sheet.source_projection not in ("text", "docx"):
+            # More than half the criteria escalated. "Insufficient" read like a grade of the
+            # student; this names the workload instead.
+            chips.append('<span class="chip strong">most findings need you</span>')
+        if sheet.source_projection == "pdf_text":
+            chips.append('<span class="chip">from PDF</span>')
+        elif sheet.source_projection not in ("text", "docx"):
             chips.append(f'<span class="chip">{_e(sheet.source_projection)}</span>')
         rows += (
             f"<tr><td><a href='/student/{_e(sheet.student_id)}'>"
@@ -222,61 +256,65 @@ def overview_page(run: RenderedRun) -> str:
         "Karani — class docket",
         f"""
 <header class="top">
-  <h1>Class docket</h1>
-  <p class="sub mono">run {_e(run.run_id)} · {o["students_total"]} submissions ·
-     {o["observations_total"]} observations</p>
-  <p class="thesis">Clerks prepare the case. Judges decide it. Karani is only ever the clerk.</p>
+  <h1>Overnight review</h1>
+  <p class="sub">{o["students_total"]} submissions read · {o["observations_total"]} findings,
+     each cited to the student's own words</p>
+  <p class="thesis">Karani prepares the case. You decide it. It is only ever the clerk.</p>
 </header>
 
-<div class="notice">Karani prepares evidence. It cannot grade. There is no score on this page,
-no ranking, and no field anywhere in the system that could hold one —
-<a href="/challenge">try to make it give you a grade</a> — or <a href="/replay">watch the night replay itself</a> — and start the day at the <a href="/brief">morning brief</a>.</div>
+<div class="notice">There is no score on this page, no ranking, and no field anywhere in
+this system that could hold one. Start with the <a href="/brief">morning brief</a>, or
+<a href="/replay">watch last night's run replay itself</a> — and if you doubt the refusal,
+<a href="/challenge">try to make it grade something</a> or
+<a href="/boundary">watch it try to write a grade and get turned away</a>.</div>
 {reference_banner}
 
-<h2>Terminal outcomes, one unattended run</h2>
+<h2>How the night went</h2>
+<p class="sub" style="margin:-.3rem 0 .8rem">One unattended run. Six kinds of outcome, told
+apart by label — never by colour or order, because that is how rankings sneak in.</p>
 <div class="grid three">{tour}</div>
 
-<h2>Submissions</h2>
+<h2>Your students' submissions</h2>
 <div class="panel scroll">
-  <table><tr><th>Submission</th><th>Observations</th><th></th></tr>{rows}</table>
-  <p class="sub" style="margin-top:.8rem">Listed by submission identifier. This is an index,
-     not a ranking: nothing on this page is ordered by anything that could proxy for quality.</p>
+  <table><tr><th>Submission</th><th>Findings</th><th></th></tr>{rows}</table>
+  <p class="sub" style="margin-top:.8rem">Listed by identifier — an index, not a ranking.
+     Nothing on this page is ordered by anything that could stand in for quality.</p>
 </div>
 
-<h2>By criterion</h2>
+<h2>Across the rubric</h2>
 <div class="panel scroll">
-  <table><tr><th>Criterion</th><th>Evidence located</th><th>No evidence</th>
-  <th>Needs review</th></tr>{criteria_rows}</table>
-  <p class="sub" style="margin-top:.8rem">Counted from the claims projection, never generated.
-  Each observation is counted once, under its one terminal outcome, so every column here
-  sums to the matching tile above. Abandoned work produces no claim and so has no column;
-  it appears in its tile and in the anomalies table.</p>
+  <table><tr><th>Criterion</th><th>Evidence found</th><th>Nothing to cite</th>
+  <th>Needs your review</th></tr>{criteria_rows}</table>
+  <p class="sub" style="margin-top:.8rem">Every number on this page is a count you could redo
+  by hand from the findings themselves — nothing here is generated. Each finding is counted
+  once, so every column sums to its tile above.</p>
 </div>
 
 {excluded_block}
 
 <h2>Ratify and deliver</h2>
 <div class="panel">
-  <p class="sub">Ratification writes the rendered evidence sheets to the instructor's Drive
-     folder and exports the CSV for LMS import. The CSV's grade column reads exclusively from
-     <span class="mono">grades/</span> — which no pipeline identity can write.</p>
+  <p class="sub">Ratifying sends the evidence sheets and the morning brief to your delivery
+     folder, and exports a gradebook CSV — with the grade column <strong>empty</strong>,
+     because grades are yours to write and Karani has nowhere to put one.</p>
   <form method="post" action="/ratify">
     <input type="hidden" name="student_ids" value="">
     <button type="submit">Ratify all and deliver</button>
   </form>
 </div>
 
-<h2>Anomaly queue</h2>
+<h2>Waiting on you</h2>
 <div class="panel scroll">
-  <table><tr><th>Kind</th><th>Submission</th><th>Criterion</th><th>Detail</th></tr>
-  {anomaly_rows or "<tr><td colspan=4 class='sub'>Empty.</td></tr>"}</table>
+  <table><tr><th>What happened</th><th>Submission</th><th>Criterion</th><th>Detail</th></tr>
+  {anomaly_rows or "<tr><td colspan=4 class='sub'>Nothing — every finding cleared its checks.</td></tr>"}</table>
 </div>
 
 <footer>
-  <p>Folded from {len(run.source_events)} append-only events ·
-     range hash <span class="mono">{_e(run.range_hash[:24])}…</span></p>
-  <p>Every artifact on this page is a pure fold over the event log. Re-folding the same events
-     in any order reproduces these bytes exactly.</p>
+  <p>Run <span class="mono">{_e(run.run_id)}</span> · rebuilt from
+     {len(run.source_events)} append-only events ·
+     verification hash <span class="mono">{_e(run.range_hash[:24])}…</span></p>
+  <p>Everything above is reconstructed from an immutable record of what happened overnight.
+     Rebuilding from the same record — in any order — reproduces this page byte for byte.</p>
 </footer>
 """,
     )
@@ -345,7 +383,7 @@ def student_page(run: RenderedRun, student_id: str) -> str:
             # field most likely to phrase something verdict-shaped. It reached the
             # instructor's screen unlinted while four layers guarded everything around it.
             escalation = lint_generated_text(str(obs["needs_human_reason"]))
-            body += f'<p class="sub">Escalated: {_e(escalation.text)}</p>'
+            body += f'<p class="sub">Why this needs you: {_e(escalation.text)}</p>'
             if escalation.masked:
                 chips.append('<span class="chip strong">verdict language masked</span>')
 
@@ -353,7 +391,7 @@ def student_page(run: RenderedRun, student_id: str) -> str:
 <div class="obs{" flagged" if obs.get("needs_human") else ""}">
   <h3><span class="mono">{_e(obs.get("criterion_id"))}</span> {" ".join(chips)}</h3>
   {body}
-  <details><summary>provenance</summary>
+  <details><summary>how this finding was produced</summary>
     <p class="mono sub">model {_e(obs.get("provenance", {}).get("model_id"))} ·
        prompt {_e(obs.get("provenance", {}).get("prompt_version"))} ·
        temperature {_e(obs.get("provenance", {}).get("temperature"))} ·
@@ -363,13 +401,14 @@ def student_page(run: RenderedRun, student_id: str) -> str:
   <form method="post" action="/edit" style="margin-top:.7rem">
     <input type="hidden" name="observation_id" value="{_e(obs.get("observation_id"))}">
     <input type="hidden" name="student_id" value="{_e(student_id)}">
-    <details><summary>disagree with this observation</summary>
-      <p class="sub" style="margin:.5rem 0">Your edit is recorded as a new observation that
-         supersedes this one. The original stays visible and stays in the log.</p>
+    <details><summary>This isn't right — correct it</summary>
+      <p class="sub" style="margin:.5rem 0">Your correction becomes the finding of record.
+         Karani's version stays visible below it — corrections are added, never erased, so
+         there is always a full history to stand on if a student appeals.</p>
       <input type="text" name="text" value="{_e(linted.text)}">
-      <input type="text" name="edit_reason" placeholder="why you are changing it"
+      <input type="text" name="edit_reason" placeholder="why you're changing it"
              style="margin-top:.4rem">
-      <button type="submit" style="margin-top:.5rem">Record supersession</button>
+      <button type="submit" style="margin-top:.5rem">Record my correction</button>
     </details>
   </form>
 </div>"""
@@ -385,35 +424,36 @@ def student_page(run: RenderedRun, student_id: str) -> str:
             for o in sheet.superseded
         )
         superseded = (
-            f"<h2>Superseded</h2><div class='panel'><ul>{items}</ul>"
-            "<p class='sub'>Edits supersede; they never mutate. Every prior version remains "
-            "in the log and in the appeal packet.</p></div>"
+            f"<h2>Earlier versions — kept</h2><div class='panel'><ul>{items}</ul>"
+            "<p class='sub'>Corrections replace what the class sees; they never erase what "
+            "was there. Every earlier version stays in the record and in the appeals "
+            "bundle.</p></div>"
         )
 
     banner = ""
     if sheet.injection_flagged:
         banner = (
-            '<div class="notice">This submission contains text addressed to an automated '
-            "reader rather than to a human one. It was flagged, logged, and "
-            "<strong>analysis proceeded</strong> — a blocked submission is a student "
-            "penalised for a file that may not be their doing.</div>"
+            '<div class="notice">This file contains hidden instructions aimed at the '
+            "software rather than at a human reader. Karani flagged it, kept a record, and "
+            "<strong>analysis proceeded</strong> — blocking the file would punish a student "
+            "for something that may not be their doing.</div>"
         )
     if sheet.status == "INSUFFICIENT":
         banner += (
-            '<div class="notice">More than half of this submission\'s criteria need human '
-            "review. It is routed as one item rather than as several separate holes.</div>"
+            '<div class="notice">More than half of this submission\'s findings need your '
+            "review, so it is routed to you as one item rather than as several separate "
+            "flags.</div>"
         )
 
     return page(
         f"Karani — {student_id}",
         f"""
-<nav class="crumbs"><a href="/">← class docket</a></nav>
+<nav class="crumbs"><a href="/">← back to the overnight review</a></nav>
 {_reference_banner(run)}
 <header class="top">
-  <h1>Evidence sheet <span class="mono">{_e(student_id)}</span></h1>
-  <p class="sub mono">{len(sheet.observations)} observations ·
-     projection {_e(sheet.source_projection)} ·
-     <a href="/appeal/{_e(student_id)}">appeal packet</a></p>
+  <h1>Evidence sheet · <span class="mono">{_e(student_id)}</span></h1>
+  <p class="sub">{len(sheet.observations)} findings, each tied to this student's own words ·
+     <a href="/appeal/{_e(student_id)}">download the appeals bundle</a></p>
 </header>
 {banner}
 {blocks}
@@ -443,7 +483,7 @@ def _locus(text: str, rendition: dict[str, Any], span_id: str, quote: str) -> st
             + _e(span_text[offset + len(quote) :])
         )
     return (
-        f"<details><summary>show the cited passage ({_e(span_id)})</summary>"
+        f"<details><summary>show where this comes from</summary>"
         f'<div class="locus">{marked}</div></details>'
     )
 

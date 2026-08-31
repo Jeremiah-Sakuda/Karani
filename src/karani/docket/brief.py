@@ -143,8 +143,8 @@ def brief_page(run: RenderedRun) -> str:
     body = f"""
 <header class="top">
   <h1>Morning brief</h1>
-  <p class="sub mono">run {_e(run.run_id)} · {run.overview["students_total"]} submissions ·
-     prepared unattended, delivered unasked</p>
+  <p class="sub">{run.overview["students_total"]} submissions, reviewed overnight ·
+     prepared unattended, delivered unasked · <span class="mono">run {_e(run.run_id)}</span></p>
   <p class="thesis">What needs you, what is done, and the pattern across the class.
      No judgments — those are yours.</p>
 </header>
