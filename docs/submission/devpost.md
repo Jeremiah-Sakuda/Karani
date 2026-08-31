@@ -200,7 +200,9 @@ masked, only flagged, and only when it evaluates their own work.
 
 ### Links
 
-- **Hosted docket:** https://karani-docket-u42sxjnqkq-uc.a.run.app · public challenge box at https://karani-docket-u42sxjnqkq-uc.a.run.app/challenge
+- **Hosted docket:** https://karani-docket-u42sxjnqkq-uc.a.run.app — challenge box at
+  `/challenge`, morning brief at `/brief`, event-log replay at `/replay`
+- **The arena (bring your own essay):** https://karani-arena-u42sxjnqkq-uc.a.run.app
 - **Repository:** https://github.com/Jeremiah-Sakuda/Karani
 - **Demo video:** `[URL]`
 - **Blog:** `[URL]`
