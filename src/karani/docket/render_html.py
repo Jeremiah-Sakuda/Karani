@@ -154,7 +154,11 @@ def page(title: str, body: str) -> str:
     # The Google Fonts link matches tryeleza.com's faces. Every rule in CSS carries local
     # fallbacks (Georgia, system-ui, ui-monospace), so the offline demo and any judge
     # behind a firewall get the same layout in the fallback faces rather than a broken one.
-    return f"""<!doctype html><html lang="en"><head>
+    # data-theme="light" pins the Eleza paper palette for every viewer. The dark tokens
+    # remain defined below it -- forcing light is one attribute here, and un-forcing it is
+    # deleting this attribute, not re-deriving a palette. Pinned for the demo window: the
+    # video, the screenshots, and a judge's first visit should all see the same page.
+    return f"""<!doctype html><html lang="en" data-theme="light"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
