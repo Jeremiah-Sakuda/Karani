@@ -56,6 +56,10 @@ def rewrite_links(html: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    # The reference log by default, because this renders *every* page shape, including
+    # the abandonment path the recorded run does not reach. The Makefile target
+    # described this as "the committed recorded run" for a long time; it is not.
+    # Pass --log fixtures/recorded-run.jsonl for real model output.
     parser.add_argument("--log", default=str(REPO / "fixtures" / "golden-log.jsonl"))
     parser.add_argument("--out", default=str(REPO / "out" / "static-docket"))
     args = parser.parse_args()

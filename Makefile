@@ -4,7 +4,7 @@ PY ?= python3.12
 VENV := .venv
 BIN := $(VENV)/bin
 
-.PHONY: help venv demo demo-live demo-emulator record-cache docket-golden docket-recorded dev-run compliance test lint fmt scale release-check submission-check bootstrap deploy static-docket clean
+.PHONY: help venv demo demo-live demo-emulator record-cache docket-golden docket-recorded dev-run compliance test lint fmt scale release-check submission-check bootstrap deploy static-docket screenshots clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -100,7 +100,10 @@ deploy: ## Deploy Karani to Cloud Run; requires PROJECT=<Google Cloud project>. 
 	@test -n "$(PROJECT)" || { echo "usage: make deploy PROJECT=<project-id>"; exit 2; }
 	./scripts/deploy.sh "$(PROJECT)"
 
-static-docket: $(BIN)/python ## Render the committed recorded run as a static docket under out/static-docket.
+screenshots: $(BIN)/python ## Regenerate the README screenshots from the committed recorded run.
+	./scripts/render_screenshots.sh
+
+static-docket: $(BIN)/python ## Render the reference log as a static docket under out/static-docket.
 	$(BIN)/python scripts/render_static_docket.py --out out/static-docket
 
 scale: $(BIN)/python ## Regenerate the ~150-submission scale corpus from the committed seed.

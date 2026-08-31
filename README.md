@@ -165,6 +165,7 @@ Other targets:
 | Target | What it does |
 |---|---|
 | `make demo` | Full pipeline over committed fixtures. Zero credentials, zero Java, zero Docker |
+| `make screenshots` | Regenerate the three screenshots above from the committed recorded run |
 | `make docket-recorded` | Serve the docket over the recorded live run — real model output. No model call, no cloud |
 | `make docket-golden` | Serve the docket over the hand-constructed reference log, which exercises every rendering path |
 | `make dev-run` | The 3-submission dev subset — the only set used for iteration |
