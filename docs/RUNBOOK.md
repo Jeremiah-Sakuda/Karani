@@ -93,9 +93,38 @@ then the observations for s07, present and normal.
 
 ## Beat 6 — 2:15–2:40 · the hero beat: disagree with it
 
-**On screen:** the instructor edits a drafted observation on `s09` — the one where the model
-over-read an unanswered rhetorical question as engagement with counterarguments. The
-supersession event appears; the original stays visible.
+**Film `s01`, criterion `c2`. Not `s09`.** This beat named `s09` for weeks, on the strength of
+what the fixture manifest *predicted*: the model would over-read an unanswered rhetorical
+question as engagement with counterarguments, and an instructor edit would be expected there.
+
+The plant did not fire. On the recorded run, `s09` draws five ordinary cited observations,
+zero escalations, and no over-read. **Do not stage a disagreement with an observation that is
+correct.** Filming an instructor overriding a right answer, narrated as the system being
+wrong, is the one thing on this list that would deserve to be caught — and the video is the
+artifact most likely to be watched closely.
+
+Use a real one. There are six escalations on the recorded run, and `s01 c2` is the clearest:
+
+> The claim mentions sources such as Aberdene and Castellanos, but Castellanos is not present
+> in the cited passage.
+
+The model wrote an observation crediting the submission with citing two scholars; the
+entailment layer read the cited passage and found only one. That is Karani being wrong in
+exactly the way the design anticipates, caught by a layer built for it, and escalated instead
+of accepted. It narrates in one sentence and needs no setup.
+
+Alternatives if the framing is awkward: `s01 c1` (position stated in the opening, never
+returned to in the conclusion), `s02 c1`, or `s05 c2`. `s04 c2` is different in kind — the
+attempt cap, not entailment — so use it only if the script changes with it.
+
+**Worth one sentence if there is room:** `s01` is the submission with the most escalations on
+the run. If Karani ranked submissions, `s01` would be at the top of the list; instead it is
+the one carrying an `insufficient` chip, because it is the one whose citations needed the most
+checking. The docket does not order submissions at all, and this is what that means in
+practice.
+
+**On screen:** the instructor edits the observation. The supersession event appears; the
+original stays visible.
 
 **Say:** one line on exemplars.
 
