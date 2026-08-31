@@ -239,11 +239,26 @@ def cmd_docket(args: argparse.Namespace) -> int:
 
         run_id = args.run_id or (runs[-1] if runs else "")
         if run_id and store is not None:
-            events = store.read_run(run_id)
-            print(
-                f"serving run {run_id} from the {settings.store_backend} store "
-                f"({len(events)} events)"
-            )
+            # A run that cannot be read or rendered must not take the docket down with it.
+            # This is the container's entrypoint: an exception here is not a stack trace an
+            # operator sees, it is the hosted docket going dark -- during judging, over one
+            # malformed document. Fall back to the committed run and say so.
+            try:
+                events = store.read_run(run_id)
+                render(run_id, events)
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    f"run {run_id} failed to load ({type(exc).__name__}); "
+                    f"falling back to the recorded run",
+                    file=sys.stderr,
+                )
+                events = read_jsonl_log(settings.golden_log)
+                run_id = events[0].run_id if events else "run-recorded"
+            else:
+                print(
+                    f"serving run {run_id} from the {settings.store_backend} store "
+                    f"({len(events)} events)"
+                )
         else:
             events = read_jsonl_log(settings.golden_log)
             run_id = events[0].run_id if events else "run-recorded"

@@ -340,10 +340,15 @@ def test_deployed_analysis_sa_cannot_mutate_an_event():
     from karani.config import EVENTS_DATABASE
 
     client = _pipeline_client(project, EVENTS_DATABASE)
-    doc = client.collection("runs").document("run-iam-probe").collection("events").document("probe")
+    doc = (
+        client.collection("runs")
+        .document("probe-iam-mutation")
+        .collection("events")
+        .document("probe")
+    )
     with contextlib.suppress(Exception):
         # Already present from an earlier probe run is fine; the update below is the assertion.
-        doc.create({"step": "RunStarted", "run_id": "run-iam-probe"})
+        doc.create({"step": "RunStarted", "run_id": "probe-iam-mutation"})
 
     with pytest.raises(PermissionDenied):
         doc.update({"step": "Tampered"})

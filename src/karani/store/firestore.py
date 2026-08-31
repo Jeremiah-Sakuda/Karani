@@ -106,7 +106,38 @@ class FirestoreEventStore:
         return [_to_event(doc.to_dict() or {}) for doc in collection]
 
     def list_runs(self) -> list[str]:
-        return sorted(doc.id for doc in self._client.collection("runs").stream())
+        """Every run that has at least one event — derived from the events, not the parents.
+
+        This used to stream the `runs` collection, which returned `[]` forever on the
+        deployed path. The store writes `runs/{run_id}/events/{event_id}` and never creates
+        the parent document, and Firestore does not list ancestor-only documents — they are
+        "missing" documents that exist purely as paths. So the very first deployed job run
+        wrote 228 real events, and the docket, asking this method what runs existed, was
+        told none: every nightly run would have accumulated invisibly while the docket fell
+        back to the baked-in recorded log, indefinitely, with nothing looking wrong.
+
+        Found the way it had to be found — by deploying, executing the job, and reading what
+        the docket actually served.
+
+        Creating the parent doc on first write was the alternative and loses twice: the
+        pipeline role is create-only, so the racing writers' parent upsert would need an
+        update permission the append-only invariant exists to withhold; and it would not
+        make runs written before the fix visible. A collection-group query sees the events
+        themselves. `select([])` fetches document *references* only — no field payloads —
+        so the cost is one lightweight row per event, fine at the scale of nightly class
+        runs and honest to name here so nobody is surprised at a much larger one.
+        """
+        run_ids = {
+            doc.reference.parent.parent.id
+            for doc in self._client.collection_group("events").select([]).stream()
+        }
+        # The deployed IAM tests write minimal probe documents to prove the boundary --
+        # `probe-<uuid>` paths whose payloads are not full events. They are permission
+        # probes, not runs, and the convention is the prefix: anything under `probe-` is
+        # invisible here. Without this the newest gate run's probe could sort last, be
+        # picked up as "the latest run", and crash the docket at container start on a
+        # document that was never an event.
+        return sorted(run_id for run_id in run_ids if not run_id.startswith("probe-"))
 
 
 def _to_event(data: dict[str, Any]) -> Event:
