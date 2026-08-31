@@ -23,7 +23,7 @@ deployed timings and the friction figures are not, and must not be spoken.
 | s07 injection catch | ✅ green | fires on the live run |
 | One escalated sheet for the hero edit | ✅ green | s01 and s02 both have escalations in the recorded run |
 | **Grades boundary verified on the deployed path** | ❌ **not green** | `pytest -m deployed` — **beat 7 is blocked on this**; see below |
-| Scheduler history ≥7 nightly runs | ❌ **not green** | `./scripts/deploy.sh asili-xprize-2026 --scheduler-only` — the clock cannot be recovered later |
+| Scheduler exists + execution history | ❌ **not green** | `./scripts/deploy.sh asili-xprize-2026`. **KAR-410's ≥7-nightly-runs AC is now unmeetable** — the clock needed to start ~Aug 24 and it is Aug 31. Film the schedule's existence and a live manual execution instead; that is what actually satisfies the contest's "demonstrate the backend is running on Google Cloud" requirement. Do not imply nightly history that does not exist. |
 | Cloud Run Job + hosted docket | ❌ **not green** | `./scripts/deploy.sh asili-xprize-2026` |
 | Scale-run overview frame | ❌ **not green** | one deployed run over `fixtures/scale/` |
 | Cost figure | ❌ **not green** | read the billing console; do not estimate |
@@ -53,7 +53,13 @@ make docket-golden
 gcloud run jobs execute karani-run --region=us-central1
 ```
 
-**Tabs already open:** Cloud Scheduler execution history showing ≥7 prior nightly runs.
+**Tabs already open:** the Cloud Scheduler job (schedule visible, `0 3 * * *`) and the Cloud Run
+Job execution list showing this run.
+
+**Do not claim nightly history.** KAR-410 wanted ≥7 prior nightly runs; the clock could only have
+started a week ago and did not. Say *"scheduled nightly at 3 a.m., triggered here manually so you
+can watch it"* — true, and it satisfies the requirement, which is proof the backend runs on Google
+Cloud rather than proof of a specific run count.
 
 **Property:** the backend really runs on Google Cloud, and the schedule is not a mock. This
 is the beat that satisfies the contest's "must demonstrate the backend is running on Google
