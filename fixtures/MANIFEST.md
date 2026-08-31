@@ -5,10 +5,25 @@ data, and no real person's writing appears here or anywhere else in this project
 municipalities and invented scholarly sources are used throughout; **no real company, person,
 or institution is named as a bad actor** in any fixture.
 
-**No observation is ever seeded.** Karani's fixtures are *inputs*. Nothing in this directory
-contains a pre-written observation, a pre-chosen citation, or an expected output that the
-pipeline is nudged toward. The "expected system behaviour" notes below are predictions this
-corpus was built to test, not answers supplied to the system.
+**No observation is ever seeded into a run.** Karani's *submission* fixtures are inputs:
+nothing under `fixtures/submissions/` contains a pre-written observation, a pre-chosen
+citation, or an expected output that the pipeline is nudged toward. The "expected system
+behaviour" notes below are predictions this corpus was built to test, not answers supplied to
+the system — and four of them turn out to be wrong, which is recorded in `docs/metrics.json`
+rather than quietly dropped.
+
+**One exception, stated because this sentence used to deny it.** `fixtures/golden-log.jsonl`
+is a hand-constructed *event log*, and it does contain pre-written observations and
+pre-chosen citations — three accepted/drafted observations and one `NoEvidenceRecorded`. It
+exists so that every rendering path has an example, including the abandonment path that the
+real recorded run does not exercise. It is never analysed and never fed to a model: it is
+input to `render()` only, which is a pure fold.
+
+It has always been disclosed elsewhere — `provenance.model_id` on those events reads
+`"none (hand-constructed reference run)"`, the docket shows a banner when serving it, and
+`docs/metrics.json` labels it "not model output". But the sentence above said "nothing in
+this directory", and this directory is where it lives. A disclosure that depends on the
+reader checking three other places is not one.
 
 ## The corpus
 
@@ -103,7 +118,7 @@ broadband, **five against**, **three qualified**.
 
 | ID | Voice |
 |---|---|
-| `s01` | Strongest paper in the corpus and should grade that way. |
+| `s01` | Fullest coverage of the rubric criteria: a locatable thesis, sustained counterargument, sourced claims. Written to give the citation layer the most to find. |
 | `s02` | Writer s02 argues AGAINST municipal broadband on a fiscal-risk + operational-capacity route (taxpayer exposure via revenue bonds; technology replacement cycles and municipal hiring/procurement rules), not on a free-market-competition route. |
 | `s03` | Position: FOR municipal broadband. |
 | `s04` | Informal, conversational, second person throughout, contractions everywhere. |

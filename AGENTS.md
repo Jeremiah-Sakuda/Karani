@@ -30,7 +30,8 @@ docs/            # PRD.md, GATE.md, BUILD-LOG.md, FINDINGS.md, metrics.json, com
 |---|---|
 | `make demo` | Committed fixture cache + local source + Firestore emulator; **zero credentials**; README line 1 |
 | `make demo-live` | Real Vertex path |
-| `make docket-golden` | Docket over `fixtures/golden-log.jsonl`; no model, no cloud |
+| `make docket-recorded` | Docket over `fixtures/recorded-run.jsonl` (real model output); no model call, no cloud |
+| `make docket-golden` | Docket over `fixtures/golden-log.jsonl` (hand-constructed reference); no model, no cloud |
 | `make dev-run` | Pipeline over `fixtures/dev/` (3 submissions) — the only set used for iteration |
 | `make compliance` | Greps KAR-### from PRD §4, diffs against §2's matrix; nonzero on any orphan |
 | `make test` | Full suite including the replay, misattribution, collision, kill, and IAM negative tests |

@@ -233,42 +233,42 @@
       "value": 15,
       "unit": "count",
       "method": "counted by freezing every file the local source discovers",
-      "measured_at": "2026-08-31T16:38:00.406862+00:00",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
       "surface": "local"
     },
     "submissions_unparseable": {
       "value": 1,
       "unit": "count",
       "method": "files that raised UnparseableSource during freeze",
-      "measured_at": "2026-08-31T16:38:00.406862+00:00",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
       "surface": "local"
     },
     "words_total": {
       "value": 14304,
       "unit": "count",
       "method": "whitespace-split over normalized rendition text",
-      "measured_at": "2026-08-31T16:38:00.406862+00:00",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
       "surface": "local"
     },
     "citable_spans_total": {
       "value": 138,
       "unit": "count",
       "method": "span registries minted from the frozen renditions",
-      "measured_at": "2026-08-31T16:38:00.406862+00:00",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
       "surface": "local"
     },
     "planted_problems_total": {
       "value": 10,
       "unit": "count",
       "method": "every planted challenge enumerated in fixtures/MANIFEST.md",
-      "measured_at": "2026-08-31T16:38:00.406862+00:00",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
       "surface": "local"
     },
     "planted_problems_found": {
       "value": 6,
       "unit": "count",
       "method": "each plant re-checked against the rendered recorded run. The four that fail (s03, s08, s09, s15) are predictions the manifest makes that the run does not bear out -- the model was more generous toward weak submissions than the fixture design expected. They are listed rather than dropped.",
-      "measured_at": "2026-08-31T16:38:00.406862+00:00",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
       "surface": "local"
     },
     "planted_problems_detail": {
@@ -286,7 +286,7 @@
       },
       "unit": "map",
       "method": "per-plant behavioural check",
-      "measured_at": "2026-08-31T16:38:00.406862+00:00",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
       "surface": "local"
     }
   },
@@ -296,14 +296,14 @@
       "value": 24,
       "unit": "count",
       "method": "folded from fixtures/golden-log.jsonl",
-      "measured_at": "2026-08-31T16:38:00.406862+00:00",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
       "surface": "local"
     },
     "sheets": {
       "value": 6,
       "unit": "count",
       "method": "evidence sheets produced by the fold",
-      "measured_at": "2026-08-31T16:38:00.406862+00:00",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
       "surface": "local"
     },
     "terminal_outcomes": {
@@ -317,14 +317,14 @@
       },
       "unit": "map",
       "method": "counted by render(); all six must be non-zero (asserted by tests/test_replay.py)",
-      "measured_at": "2026-08-31T16:38:00.406862+00:00",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
       "surface": "local"
     },
     "range_hash": {
       "value": "355e9350af2d7b73c642f46615e670b5d70e3dcb5a62210c2d3633b5b51970c4",
       "unit": "sha256",
       "method": "hash over the content hashes of every consumed event",
-      "measured_at": "2026-08-31T16:38:00.406862+00:00",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
       "surface": "local"
     }
   },
@@ -333,8 +333,42 @@
       "value": 235,
       "unit": "count",
       "method": "pytest --collect-only, default markers (no credentials, no emulator, no model calls)",
-      "measured_at": "2026-08-31T16:38:00.406862+00:00",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
       "surface": "local"
+    }
+  },
+  "published_constants": {
+    "_note": "Read from the code at measurement time, not typed. These appear on the architecture diagram, in README alt text, and in the Devpost description.",
+    "event_types": {
+      "value": 17,
+      "unit": "count",
+      "method": "len(karani.schema.events.Step) -- labelled on diagram A",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "surface": "local"
+    },
+    "banned_field_names": {
+      "value": 26,
+      "unit": "count",
+      "method": "len(karani.schema.observation.BANNED_FIELD_NAMES). The Devpost description said 27; the list holds 26. It no longer states a number it does not derive.",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "surface": "local"
+    },
+    "max_analyst_workers": {
+      "value": 15,
+      "unit": "count",
+      "method": "the --workers value in scripts/deploy.sh, which is the pool the deployed job runs",
+      "measured_at": "2026-08-31T16:41:37.107166+00:00",
+      "surface": "local"
+    }
+  },
+  "one_off_observations": {
+    "_note": "Single manual readings from live calls. NOT reproduced by scripts/update_metrics.py and not re-derivable from any committed artifact -- which is exactly why they are quarantined in their own section rather than sitting beside the computed figures. Treat as anecdote with a date on it.",
+    "thinking_tokens_on_a_32_token_prompt": {
+      "value": 222,
+      "unit": "count",
+      "method": "one live gemini-3.6-flash smoke call during model verification; usage_metadata read from the response. Recorded because it is the reason no token-arithmetic cost estimate is published: thinking tokens dominate a trivial prompt.",
+      "measured_at": "2026-08-13T00:00:00+00:00",
+      "surface": "live-vertex"
     }
   }
 }

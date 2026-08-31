@@ -26,8 +26,20 @@ over one named instructor's real grading load.
 
 - First commit: recorded in the README on the first push.
 - History is unsquashed and never rebased; the public commit log is the evidence.
-- `git log --before=2026-08-03` audit across every repository that might contribute code:
-  **OPEN** — to be committed with its result.
+- `git log --before=2026-08-03` audit: **CLOSED for this repository.** All 33 commits
+  fall inside the Submission Period; the first is dated 2026-08-12, and `git log
+  --before=2026-08-03` returns 0 commits. Reproduce with:
+
+  ```
+  git log --before=2026-08-03 --oneline | wc -l    # expect 0
+  git log --reverse --format='%ad' --date=short | head -1
+  ```
+
+  The scope of this check is what the tooling can establish: that no commit in *this*
+  repository predates the period. Whether code was carried in from a repository not
+  represented here is not something a git history can answer, and the entrant's declaration
+  covers it. The row previously read "across every repository that might contribute code",
+  which promised an audit no command in this repo can perform.
 - Design lineage with the sibling entry is disclosed as **pattern, not code**, in the README
   under `## Relationship to my other submissions`.
 

@@ -47,7 +47,13 @@ Not yet measured. No instrumented run has executed. Every entry below is pending
 - Retry distribution — **not yet measured**
 - Cache hit rate — **not yet measured**
 - Which `source_projection` tier the PDFs actually settled at — **not yet measured**
-- What the Model Armor surface allows on this account tier — **not yet measured**
+- What the Model Armor surface allows on this account tier — **not yet measured**. Until
+  now it was not even *reachable*: `google-cloud-modelarmor` was declared in neither
+  `pyproject.toml` nor `requirements.lock`, so `ManagedModelArmor.scan` hit its
+  `ImportError` branch in every environment, deployed or not, and `open_scanner()`
+  returned `LocalPatternScanner` unconditionally — while `bootstrap_gcp.sh` created a
+  Model Armor template nothing could call. The adapter was honest about degrading; it
+  just never got the chance to do anything else. The dependency is now declared.
 - Scale-run behaviour at N≈150 — **not yet measured**
 - KAR-205 friction numbers — **not yet measured**
 

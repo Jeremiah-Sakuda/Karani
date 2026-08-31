@@ -17,6 +17,7 @@ found it. In-process numbers are never promoted to deployed ones.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -264,6 +265,40 @@ def main() -> int:
             m["tests_collected"],
             "count",
             "pytest --collect-only, default markers (no credentials, no emulator, no model calls)",
+        ),
+    }
+
+    # Numbers that appear on published surfaces -- a diagram label, an alt text, the Devpost
+    # description -- and were not in this file. The measurement contract says every published
+    # number exists here first, so a review that found seven of them missing found the
+    # contract's author breaking it. Each is read from the code rather than typed, so they
+    # cannot drift: the diagram cannot claim 17 event types while the enum holds 18.
+    from karani.schema.events import Step  # noqa: PLC0415
+    from karani.schema.observation import BANNED_FIELD_NAMES  # noqa: PLC0415
+
+    deploy_text = (REPO / "scripts" / "deploy.sh").read_text(encoding="utf-8")
+    workers_match = re.search(r"--workers,(\d+)", deploy_text)
+    assert workers_match, "scripts/deploy.sh no longer configures a worker pool"
+    workers = workers_match.group(1)
+
+    metrics["published_constants"] = {
+        "_note": (
+            "Read from the code at measurement time, not typed. These appear on the "
+            "architecture diagram, in README alt text, and in the Devpost description."
+        ),
+        "event_types": entry(
+            len(list(Step)), "count", "len(karani.schema.events.Step) -- labelled on diagram A"
+        ),
+        "banned_field_names": entry(
+            len(BANNED_FIELD_NAMES),
+            "count",
+            "len(karani.schema.observation.BANNED_FIELD_NAMES). The Devpost description said "
+            "27; the list holds 26. It no longer states a number it does not derive.",
+        ),
+        "max_analyst_workers": entry(
+            int(workers),
+            "count",
+            "the --workers value in scripts/deploy.sh, which is the pool the deployed job runs",
         ),
     }
 

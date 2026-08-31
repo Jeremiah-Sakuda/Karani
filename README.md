@@ -7,6 +7,11 @@ make demo
 Zero credentials. Zero Java. Zero Docker. Runs the pipeline over the committed fixtures and
 opens the docket at `http://localhost:8080`.
 
+**One prerequisite: Python 3.12 or 3.13** (`make` calls `python3.12` by name and builds its
+own virtualenv; nothing is installed globally). On a different interpreter in that range,
+`make demo PY=/path/to/python3.13`. 3.14 is not yet supported by the pinned dependency set,
+and `make` now says so rather than failing three steps later inside `pip`.
+
 > **What `make demo` actually replays.** 187 model responses recorded from **two** real
 > 16-submission runs against Vertex AI (`gemini-3.6-flash` + `gemini-3.5-flash-lite`,
 > temperature 0), committed to `fixtures/cache/`: 93 from the `p1` prompt version and 94 from
@@ -63,7 +68,7 @@ downstream system, and no aggregate can be computed.
 An auto-grader's product is the score. Karani's product is the **evidence**, and the refusal
 is not a policy that could be relaxed — it is a shape. There is no field on any record in this
 system that could hold a grade. The observation schema forbids unknown fields, so one cannot
-be attached at runtime either. The public challenge box answers with the schema itself — run `make docket-golden` and open
+be attached at runtime either. The public challenge box answers with the schema itself — run `make docket-recorded` and open
 `/challenge`. (Not yet hosted: the deploy has not been run.)
 
 **Karani's output is designed to be contestable.** Supersession instead of mutation. Diff
@@ -160,7 +165,8 @@ Other targets:
 | Target | What it does |
 |---|---|
 | `make demo` | Full pipeline over committed fixtures. Zero credentials, zero Java, zero Docker |
-| `make docket-golden` | Serve the docket over the committed golden log. No model, no cloud |
+| `make docket-recorded` | Serve the docket over the recorded live run — real model output. No model call, no cloud |
+| `make docket-golden` | Serve the docket over the hand-constructed reference log, which exercises every rendering path |
 | `make dev-run` | The 3-submission dev subset — the only set used for iteration |
 | `make test` | Full suite. No credentials, no emulator, no model calls, no money |
 | `make compliance` | Diff requirement IDs in PRD §4 against the §2 matrix. Nonzero on any orphan |
@@ -205,12 +211,14 @@ Stated with their arithmetic, because a system is defined as much by what it ref
   invariant table.
 - **No vector database.** Every submission fits in context whole. The token arithmetic assumes
   one model call per submission covering all criteria: a per-criterion fan-out would cost
-  roughly **4.5×** for the same work, because the essay — the expensive part of the payload —
+  roughly **4.5×** *(arithmetic, not a measurement — see the note below the metrics table)*
+  for the same work, because the essay — the expensive part of the payload —
   would be resent for every criterion. More importantly, **RAG would actively harm the central
   invariant**: chunk retrieval hands the model a *subset* of the spans and then asks it to be
   exhaustive, which manufactures both false `no_evidence` and pressure to fabricate.
   Whole-document context is the enabling condition for a closed span registry, not a
-  convenience. An index first earns its keep at exemplar selection, around 200 submissions.
+  convenience. An index first earns its keep at exemplar selection, somewhere around 200
+  submissions — an estimate from the same arithmetic, not a measured threshold.
 - **No Pub/Sub.** Cloud Run + Firestore + Scheduler satisfies the mandatory infrastructure
   requirement. **The append-only log is the decoupling seam Pub/Sub would have provided.**
 - **No Drive ingest.** Reading an instructor's Drive means either `drive.readonly`, which
@@ -311,10 +319,19 @@ precisely the failure mode this system exists to constrain, and it is why the en
 and the escalation path carry the weight they do rather than the drafting prompt.
 
 **Still "not yet measured", deliberately:** the dollar cost per run, every deployed-path
-timing, and the KAR-205 friction numbers. Nothing is deployed yet, and `gemini-3.6-flash` bills
-thinking tokens — 222 on a 32-token prompt in one smoke test — so a token-arithmetic cost
-estimate would understate the real figure. That number comes from the billing console or it
-does not appear.
+timing, and the KAR-205 friction numbers. Nothing is deployed yet, and `gemini-3.6-flash`
+bills thinking tokens — 222 of them on a 32-token prompt, in one live smoke test — so a
+token-arithmetic cost estimate would understate the real figure. That number comes from the
+billing console or it does not appear.
+
+**Measurements, arithmetic, and one-off readings are three different things,** and this
+README used to present them in the same voice. Everything in the table above is recomputed
+from a committed log by `scripts/update_metrics.py`. The 4.5× RAG multiplier and the
+~200-submission index threshold are *arithmetic* over a token model — reasoning, not
+evidence, and labelled as such where they appear. The 222 thinking tokens is a *single
+manual reading* from one live call, recorded under `one_off_observations` in
+`docs/metrics.json` and not reproduced by any script. It is the weakest kind of number here,
+which is why it is the only one carrying that label.
 
 ## Fixtures and data provenance
 
@@ -322,9 +339,18 @@ Every submission in [`fixtures/`](fixtures/) is **synthetic**. No real student w
 student data, no real person's writing. Invented municipalities and invented scholarly sources
 throughout; **no real company, person, or institution is named as a bad actor** anywhere.
 
-**No observation is ever seeded.** Fixtures are *inputs*. Nothing in this repository contains a
-pre-written observation, a pre-chosen citation, or an expected output the pipeline is nudged
-toward.
+**No observation is ever seeded into a run.** Submission fixtures are *inputs*: nothing under
+`fixtures/submissions/` contains a pre-written observation, a pre-chosen citation, or an
+expected output the pipeline is nudged toward.
+
+The one exception, named because this sentence used to deny it: `fixtures/golden-log.jsonl`
+is a hand-constructed *event log* containing pre-written observations and pre-chosen
+citations. It exists so every rendering path has an example — including abandonment, which
+the real recorded run does not exercise. It is never analysed and never sent to a model; it
+is input to `render()` only. Its events carry `provenance.model_id: "none (hand-constructed
+reference run)"`, the docket shows a banner when serving it, and `docs/metrics.json` labels
+it "not model output" — but a blanket "nothing in this repository" was false, and a
+disclosure that depends on the reader checking three other places is not one.
 
 15 authored submissions across `.md`, `.docx`, and `.pdf`, plus one deliberately unparseable
 file. Every planted challenge — the injection payload, the unanswered rhetorical question, the
@@ -353,7 +379,15 @@ worth the day. The reasoning is in [docs/antigravity/decision.md](docs/antigravi
 ## Provenance and prior work
 
 All code in this repository was authored during the contest Submission Period. The public,
-unsquashed commit history is the evidence.
+unsquashed commit history is the evidence, and the check is one command:
+
+```bash
+git log --before=2026-08-03 --oneline | wc -l    # 0
+```
+
+Recorded with its result in [docs/compliance.md](docs/compliance.md). What that establishes
+is bounded and worth stating: no commit *here* predates the period. A git history cannot
+speak for a repository it does not contain.
 
 Runtime is **Gemini exclusively**. There is no Anthropic, OpenAI, or other third-party model
 client in any execution path, in any environment, at any time, and none in the dependency tree.
