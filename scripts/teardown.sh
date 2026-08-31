@@ -46,6 +46,14 @@ for ep in $(gcloud ai endpoints list --region="$REGION" \
   gcloud ai endpoints delete "$ep" --region="$REGION" --quiet 2>/dev/null || true
 done
 
+# The container images. This was the gap: deploy.sh creates an Artifact Registry repository
+# and pushes an image to it on every deploy, and teardown mentioned it nowhere -- neither
+# removing it nor listing it as retained. Image storage is billed, so a script whose stated
+# acceptance criterion is "leaves nothing billable" was leaving the one thing that
+# accumulates with every redeploy.
+say "Artifact Registry"
+gcloud artifacts repositories delete karani --location="$REGION" --quiet 2>/dev/null || true
+
 say "Model Armor template"
 gcloud model-armor templates delete karani-injection --location="$REGION" --quiet 2>/dev/null || true
 
@@ -62,11 +70,18 @@ say "Remaining billable resources"
 echo "Cloud Run services:"; gcloud run services list --region="$REGION" --format='value(name)' 2>/dev/null || true
 echo "Cloud Run jobs:";     gcloud run jobs list --region="$REGION" --format='value(name)' 2>/dev/null || true
 echo "Vertex endpoints:";   gcloud ai endpoints list --region="$REGION" --format='value(displayName)' 2>/dev/null || true
+echo "Artifact repos:";     gcloud artifacts repositories list --location="$REGION" --format='value(name)' 2>/dev/null || true
+echo "Firestore databases:"; gcloud firestore databases list --format='value(name)' 2>/dev/null || true
 
 cat <<EOF
 
 Retained on purpose:
-  Firestore data and the event log  -- the record that a run happened
+  Firestore databases and the event log -- the record that a run happened. These are listed
+                                     above so the retention is a decision you can see rather
+                                     than an omission you have to notice. Delete-protection is
+                                     on; removing them takes two deliberate commands:
+                                       gcloud firestore databases update --database=karani-events --no-delete-protection
+                                       gcloud firestore databases delete --database=karani-events
   Service accounts and the custom role -- free, and re-creating them changes their identities
   Budget alerts                      -- keep them armed
 
