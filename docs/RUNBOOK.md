@@ -44,26 +44,37 @@ All preconditions are green. What remains is staging.
 
 ---
 
-## Beat 1 — 0:00–0:18 · the problem, and the refusal
+## Beat 1 — 0:00–0:40 · what this is, who it's for, why it exists
 
-**On screen:** the docket's landing header — "Overnight review · 15 submissions read · 75
-findings, each cited to the student's own words." Burned-in lower third from **second 1**:
-*"Karani prepares evidence. It cannot grade."*
+**The video must stand alone.** Assume the judge has read nothing — not the Devpost, not
+the README. By 0:40 they must know the product, the customer, and the reason, in plain
+words. That is what this beat buys with its forty seconds, and it is why it is the longest
+beat in the script.
 
-**Say — the frame first, then the thesis:**
+**On screen:** the docket landing page, scrolling slowly — the header, the outcome tiles,
+the submissions table drifting past while you talk. Burned-in lower third from **second
+1**, and it now does the explaining by itself for a muted viewer:
+*"KARANI — overnight grading evidence for instructors. It cannot grade."*
 
-> *"Most AI agents are pitched on what they can do. This one is built around what it
-> deliberately leaves out."*
+**Say (verbatim, ~35 seconds):**
 
-One sentence of friction — *"grading time is mostly evidence-gathering: finding the passage
-that justifies the feedback, forty times a night"* — then:
+> *"If you teach, you know this night: forty essays due back, and hours of work that isn't
+> actually judging — it's hunting. Finding the sentence in each paper that justifies the
+> feedback you already know you're going to give.*
+>
+> *Karani is an overnight assistant for instructors. While you sleep, it reads every
+> submission in the pile and builds an evidence sheet for each student — every finding tied
+> to a quote from the student's own writing, checked before it reaches you.*
+>
+> *And the one thing it cannot do — by construction, not by promise — is grade. Because an
+> AI's grade is a grade you can't defend: not to your department, not to a student who
+> appeals. Most AI tools are pitched on what they can do. This one is built around what it
+> deliberately leaves out. The judgment stays yours. The hunting doesn't."*
 
-> *"Karani prepares the case. You decide it. The judgment belongs to the professional, and
-> we kept it that way on purpose."*
+**Property:** a judge who watches only this beat can answer "what did they build, for whom,
+and why" in their own words.
 
-**Property:** the refusal is legible in the first 8 seconds to a viewer with no audio.
-
-## Beat 2 — 0:18–0:45 · trigger it live, on Google Cloud
+## Beat 2 — 0:40–1:00 · trigger it live, on Google Cloud
 
 **Navigate:** window B → Scheduler list (hold 2s on `karani-nightly` / `0 3 * * *`) → the
 `karani-run` job page → click **EXECUTE** → confirm. The execution appears at the top of
@@ -74,7 +85,7 @@ the list, spinner running, next to today's earlier runs.
 
 **Property:** the backend really runs on Google Cloud, clicked, not curled.
 
-## Beat 3 — 0:45–1:05 · the night, watched
+## Beat 3 — 1:00–1:15 · the night, watched
 
 **Navigate:** window A → Replay tab → click **"▶ Replay the night"**. Hold ~15 seconds:
 tiles fill — *cited on the first pass, nothing to cite, routed to you* — while the ticker
@@ -83,7 +94,7 @@ scrolls the record in order.
 **Say:** *"This is the permanent record of last night replaying — every step, in order.
 Six kinds of outcome, not six labels on the same one."*
 
-## Beat 4 — 1:05–1:25 · scale, measured
+## Beat 4 — 1:15–1:30 · scale, measured
 
 **Navigate:** window B → the scale execution detail (15 workers visible). One breath.
 
@@ -92,7 +103,7 @@ findings, thirteen and a half minutes, zero failures. First-pass acceptance drop
 to 70 percent at scale — we publish that, because a metric that only ever improves deserves
 suspicion."*
 
-## Beat 5 — 1:25–1:50 · the morning after: brief, docket, citation
+## Beat 5 — 1:30–1:55 · the morning after: brief, docket, citation
 
 **Navigate:** window A → Brief tab. Hold on **"What needs you"**, scroll to the class
 pattern. Click **"Full docket"** → click **`s12`** → click **"show where this comes from"**
@@ -102,7 +113,7 @@ on the first finding: the student's sentence highlights in place.
 pattern across the class — counts and quotations, never characterizations. Every finding
 is a link to its own proof."*
 
-## Beat 6 — 1:50–2:05 · the injection catch
+## Beat 6 — 1:55–2:07 · the injection catch
 
 **Navigate:** docket → click **`s07`** (the `hidden instructions` chip). The banner:
 flagged, kept a record, **analysis proceeded**. Scroll once — findings present, ordinary.
@@ -110,7 +121,7 @@ flagged, kept a record, **analysis proceeded**. Scroll once — findings present
 **Say:** *"This file tried to talk to the software instead of the reader. Flagged, logged —
 and analysed anyway, because blocking the file punishes the student."*
 
-## Beat 7 — 2:05–2:30 · the hero beat: disagree with it
+## Beat 7 — 2:07–2:28 · the hero beat: disagree with it
 
 **Film `s01`, criterion `c2`. Not `s09`.** (`s09` was the fixture manifest's *predicted*
 over-read; the plant never fired and its findings are correct. Never stage a disagreement
@@ -135,7 +146,7 @@ Alternates: `s01`, criterion `c1` · `s02`, criterion `c1` · `s05`, criterion `
 **Property:** the beat where Karani is *wrong* and the system handles it correctly. Do not
 cut it.
 
-## Beat 8 — 2:30–2:50 · the denial, as a page
+## Beat 8 — 2:28–2:47 · the denial, as a page
 
 **Navigate:** window A → Boundary tab — headline *"Can Karani write a grade?"* Click
 **"Try to write a grade, right now."** The result page: **"It tried. It was turned away."**
@@ -148,7 +159,7 @@ That's not a policy. That's a locked door it holds no key to."*
 **Property:** the boundary demonstrated in the product itself, with the deployed test suite
 (4/4, as the pipeline identity) standing behind it. "Structurally impossible" is licensed.
 
-## Beat 9 — 2:50–3:10 · ratify, and look at the gradebook
+## Beat 9 — 2:47–3:05 · ratify, and look at the gradebook
 
 **Navigate:** docket → **"Ratify and deliver"** → click **"Ratify all and deliver"** (the
 unlock cookie from prep authorises it). The receipt renders **the gradebook CSV as a
@@ -158,7 +169,7 @@ table, on screen** — every grade cell reading *"— yours to write —"*.
 with the grade column arriving empty, read from a database no part of the pipeline can
 write. Karani exports the blank; filling it is your job, on purpose."*
 
-## Beat 10 — 3:10–3:30 · try it yourself, and it isn't about essays
+## Beat 10 — 3:05–3:27 · try it yourself, and it isn't about essays
 
 **Navigate:** window A → Scholarship tab, 4 seconds — *"A different job, the same clerk"* —
 click `a02`: *nothing to cite* on financial need and community involvement. Then the Arena
@@ -171,7 +182,7 @@ with a second model, Gemma, cross-checking every citation. And it's live: paste 
 you like, right now — the URL's in the submission — and there is still no field for a
 grade."*
 
-## Beat 11 — 3:30–3:45 · close
+## Beat 11 — 3:27–3:45 · close
 
 **On screen:** s01's **"Earlier versions — kept"** panel for 2 seconds, then the
 architecture diagram.
@@ -193,9 +204,9 @@ opening frame:
 4. Beat 6 compressed to chip + banner
 5. Beat 3 trimmed to 10 seconds of replay
 
-**Never cut:** the console EXECUTE click · the replay's first ten seconds · the hero
-correction · the boundary button · the empty gradebook · the lower third · the thesis
-lines.
+**Never cut:** beat 1's what/who/why — it is the reason the video stands alone · the
+console EXECUTE click · the replay's first ten seconds · the hero correction · the boundary
+button · the empty gradebook · the lower third.
 
 ## Standing rules on camera
 

@@ -266,11 +266,15 @@ def overview_page(run: RenderedRun) -> str:
   <p class="thesis">Karani prepares the case. You decide it. It is only ever the clerk.</p>
 </header>
 
-<div class="notice">There is no score on this page, no ranking, and no field anywhere in
-this system that could hold one. Start with the <a href="/brief">morning brief</a>, or
-<a href="/replay">watch last night's run replay itself</a> — and if you doubt the refusal,
-<a href="/challenge">try to make it grade something</a> or
-<a href="/boundary">watch it try to write a grade and get turned away</a>.</div>
+<div class="notice"><strong>What you're looking at:</strong> Karani read this class's
+submissions overnight and prepared the evidence for grading — every finding below is tied
+to a quote from the student's own writing, checked four ways before it reached this page.
+What it did <em>not</em> do, and cannot do, is grade: there is no score here, no ranking,
+and no field anywhere in this system that could hold one. Start with the
+<a href="/brief">morning brief</a>, or <a href="/replay">watch last night's run replay
+itself</a> — and if you doubt the refusal, <a href="/challenge">try to make it grade
+something</a> or <a href="/boundary">watch it try to write a grade and get turned
+away</a>.</div>
 {reference_banner}
 
 <h2>How the night went</h2>

@@ -25,6 +25,20 @@ holds a key to. We think this is where high-stakes agents are headed — compete
 evidence, and a designed incapability at the verdict — and Karani is a working instance of
 the pattern, deployed, with the incapability under test.
 
+**What it is:** an overnight assistant that reads an entire class's essay submissions and
+builds, for each student, an evidence sheet — every observation tied to a verbatim quote
+from the student's own writing — plus a morning work-list of what needs the instructor's
+attention.
+
+**Who it's for:** instructors and TAs grading essay assignments. The person with forty
+papers due back, whose grading time is mostly spent hunting for the sentence that justifies
+the feedback they already know they'll give.
+
+**Why the incapability is the product:** the reason AI hasn't already eaten this job is not
+capability — it's that an AI's *grade* is indefensible. Departments ban it, students appeal
+it, and they're right to. Karani removes the hunting and provably cannot touch the verdict,
+which is exactly what makes it adoptable where AI graders are not.
+
 One sentence for the skeptic who reads "batch LLM calls": the model calls are the cheapest
 part of this system — the contribution is the **constraint system around them**, five
 validation layers across two model families, an append-only event log a pure fold renders
