@@ -29,6 +29,7 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from karani.docket.render_html import (
+    _e,
     challenge_answer,
     challenge_page,
     overview_page,
@@ -266,6 +267,100 @@ def build_app(rendered: RenderedRun, store: Any | None = None) -> FastAPI:
                     "exists on any record in this system."
                 ),
             }
+        )
+
+    @app.post("/grade")
+    def record_grade(
+        request: Request,
+        student_id: str = Form(...),
+        grade: str = Form(...),
+        note: str = Form(""),
+    ) -> HTMLResponse:
+        """The instructor records a grade — the one write Karani makes on someone's behalf
+        and the one it can never originate (KAR-415).
+
+        `GradesStore.write()` existed with no caller. An adversarial review found it, and the
+        finding was sharper than "dead code": the grades database is the centrepiece of this
+        project's security argument, and nothing in the running system had ever written to
+        it. The boundary was only ever demonstrated in the negative — a service account being
+        denied — which proves an identity cannot write, not that the destination is real.
+
+        There is deliberately no path from an `Observation` to a `Grade`. Not a disabled one:
+        none. This handler takes the grade as **typed input from a person**, and the only
+        thing it reads from the run is whether the student exists.
+
+        It requires the instructor token, because the identity writing here is the whole
+        point of the boundary existing.
+        """
+        if not writes_open(request):
+            return HTMLResponse(
+                page(
+                    "Karani — locked",
+                    "<p class='sub'>Recording a grade writes to the instructor's grades "
+                    "database and requires the instructor token.</p>",
+                ),
+                status_code=403,
+            )
+
+        run = current()
+        if not any(sheet.student_id == student_id for sheet in run.sheets):
+            return HTMLResponse(
+                page(
+                    "Karani — unknown submission",
+                    f"<p class='sub'>No submission {_e(student_id)} in this run.</p>",
+                ),
+                status_code=404,
+            )
+
+        from karani.config import Settings
+        from karani.grades import Grade, open_grades_store
+
+        store = open_grades_store(Settings.from_env().project)
+        if store is None:
+            # Not deployed, or no credentials. Reported rather than swallowed: an instructor
+            # who believes a grade was recorded and finds an empty CSV column later is worse
+            # off than one who is told now.
+            return HTMLResponse(
+                page(
+                    "Karani — grades database unreachable",
+                    "<p class='sub'>The grades database is not reachable from here, so "
+                    "nothing was written. This is the expected state locally: the database "
+                    "exists only on the deployed project, and Karani reports the failure "
+                    "rather than recording a grade it did not store.</p>",
+                ),
+                status_code=503,
+            )
+
+        try:
+            store.write(
+                Grade(
+                    student_id=student_id,
+                    value=grade,
+                    actor="instructor",
+                    ts=datetime.now(UTC),
+                    note=note,
+                )
+            )
+        except Exception as exc:  # noqa: BLE001 - the denial is the interesting outcome
+            return HTMLResponse(
+                page(
+                    "Karani — grade not recorded",
+                    f"<p class='sub'>The write was refused: "
+                    f"<span class='mono'>{_e(type(exc).__name__)}</span>. Nothing was "
+                    f"recorded. If this docket is running as a pipeline service account, "
+                    f"this refusal is the boundary working as designed.</p>",
+                ),
+                status_code=502,
+            )
+
+        return HTMLResponse(
+            page(
+                "Karani — grade recorded",
+                f"<p class='sub'>Recorded <span class='mono'>{_e(grade)}</span> for "
+                f"<span class='mono'>{_e(student_id)}</span>, attributed to the instructor, "
+                f"with an immutable history entry beside it. Karani did not derive this "
+                f"value and has no function that could.</p>",
+            )
         )
 
     @app.post("/ratify")

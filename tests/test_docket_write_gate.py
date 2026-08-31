@@ -146,3 +146,69 @@ def test_with_no_token_configured_editing_is_open(open_docket: TestClient):
     before = len(_edit_events(open_docket))
     assert _edit(open_docket, oid, sid).status_code == 303
     assert len(_edit_events(open_docket)) == before + 1
+
+
+# --- recording a grade: the one write Karani makes on a person's behalf (KAR-415) --------
+
+
+def test_recording_a_grade_requires_the_token(locked: TestClient):
+    response = locked.post("/grade", data={"student_id": "s01", "grade": "B+"})
+    assert response.status_code == 403
+
+
+def test_a_grade_for_an_unknown_submission_is_refused(locked: TestClient):
+    locked.get("/unlock", params={"token": TOKEN})
+    response = locked.post("/grade", data={"student_id": "nobody", "grade": "B+"})
+    assert response.status_code == 404
+
+
+def test_locally_the_grade_write_reports_that_it_did_not_happen(locked: TestClient):
+    """No grades database exists locally, and Karani says so rather than appearing to succeed.
+
+    An instructor who believes a grade was recorded and finds an empty CSV column a week
+    later is worse off than one who is told immediately.
+    """
+    locked.get("/unlock", params={"token": TOKEN})
+    response = locked.post("/grade", data={"student_id": "s01", "grade": "B+"})
+    assert response.status_code in (502, 503)
+    assert "nothing was written" in response.text.lower() or "refused" in response.text.lower()
+
+
+def test_there_is_no_path_from_an_observation_to_a_grade():
+    """The invariant the endpoint must not quietly weaken.
+
+    `Grade` takes its value as typed input. If a future change adds "suggest a grade from the
+    evidence", it has to write that function — and writing it is the moment someone should
+    stop. This asserts no such function exists.
+    """
+    import ast
+    from pathlib import Path as _Path
+
+    import karani.grades as grades_module
+
+    tree = ast.parse(_Path(grades_module.__file__).read_text(encoding="utf-8"))
+
+    # Imports, not prose. The module's own docstring says the words "Observation" and
+    # "Grade" in the sentence explaining that no path between them exists, so a substring
+    # search fails on the documentation that states the invariant.
+    imported: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            imported.update(alias.name for alias in node.names)
+            if node.module:
+                imported.add(node.module)
+        elif isinstance(node, ast.Import):
+            imported.update(alias.name for alias in node.names)
+
+    assert not any("observation" in name.lower() for name in imported), (
+        f"karani.grades imports {sorted(imported)}; there must be no constructor path from "
+        "an observation to a grade"
+    )
+
+    # And no function anywhere takes an observation and returns a grade.
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            args = [a.arg.lower() for a in node.args.args]
+            assert not any("observation" in a for a in args), (
+                f"karani.grades.{node.name} accepts an observation"
+            )
