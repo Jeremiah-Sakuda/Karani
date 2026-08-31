@@ -1,7 +1,22 @@
 # What only you can do
 
-**Updated 2026-08-13.** Ordered by urgency. Item 1 is first because it is the only thing here
-that cannot be recovered by working harder later.
+**Updated 2026-08-31, deadline day.** Ordered by urgency. Everything a script can do has been
+done; what is left needs your account, your voice, or your judgement.
+
+Six independent review passes ran against this repository. The last one scored it 2/5 and
+named the pattern exactly: nearly every remaining defect was in the **narration** — README
+prose, diagram captions, blog and social copy, metric method strings — and the copy
+over-claimed hardest on the mechanisms that were weakest. Those are fixed; the detail is in
+the commit log. Two are worth knowing about because they change what you film:
+
+- `karani verify` passed a tampered artifact. It compared a hash of the events against a hash
+  of the events and never looked at the artifact body — so a file with every observation
+  rewritten to "this paper earns an A" verified clean, exit 0. If you demo `verify`, it now
+  works; before today it was a false assurance, which is worse than not shipping one.
+- **Beat 6 told you to film a disagreement with a correct observation.** Read §Beat 6 in the
+  run-book before recording. Use `s01 c2`, not `s09`.
+
+Test count went 169 → 256 today, all five gates green.
 
 ---
 
