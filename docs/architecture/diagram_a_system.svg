@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 760" width="1180" height="760" font-family="Inter, Helvetica, Arial, sans-serif">
   <title>Karani system architecture: one append-only log drives every artifact, and the grades database is unreachable from it</title>
-  <desc>Cloud Scheduler triggers one Cloud Run Job. Its dispatcher fans out a bounded pool of analyst workers across submissions through ingest, rendition freeze, Gemma triage and an injection scan, into Gemini 3.6 Flash. Every step appends to a create-only Firestore event log. A citation validator accepts, rejects up to twice, or escalates to a human. A terminal-state join with a wall-clock deadline feeds render(runId), a pure fold that is the sole writer of evidence sheets, the class overview and the claims projection. Output reaches a Cloud Run docket service and a delivery step writing one Drive folder plus a CSV. Grades live in a SEPARATE Firestore database that no pipeline service account is bound to at all; the append-only role binding carries an IAM condition naming the events database, because datastore.entities.create cannot be scoped to a collection and the Firestore server SDK is authorised by IAM rather than by Security Rules.</desc>
+  <desc>Cloud Scheduler triggers one Cloud Run Job. Its dispatcher fans out a bounded pool of analyst workers across submissions through ingest, rendition freeze, Gemma triage and an injection scan, into Gemini 3.6 Flash, with every accepted citation cross-checked by a second model family (gemma3:4b, locally run) before it becomes evidence. Every step appends to a create-only Firestore event log. A citation validator accepts, rejects up to twice, or escalates to a human. A terminal-state join with a wall-clock deadline feeds render(runId), a pure fold that is the sole writer of evidence sheets, the class overview and the claims projection. Output reaches a Cloud Run docket service (morning brief, event-log replay, the live boundary demonstration, and a scholarship exhibit proving the pattern generalizes), a public arena service that runs the same pipeline ephemerally on anything a visitor pastes, and a delivery step writing one Drive folder plus a CSV. Grades live in a SEPARATE Firestore database that no pipeline service account is bound to at all; the append-only role binding carries an IAM condition naming the events database, because datastore.entities.create cannot be scoped to a collection and the Firestore server SDK is authorised by IAM rather than by Security Rules.</desc>
 
   <defs>
     <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -65,7 +65,7 @@
 
   <rect class="box" x="752" y="128" width="112" height="46"/>
   <text class="lbl" x="762" y="148">Gemma triage</text>
-  <text class="mono" x="762" y="164">bonus tier</text>
+  <text class="mono" x="762" y="164">local tier</text>
 
   <rect class="box" x="880" y="128" width="210" height="46"/>
   <text class="lbl" x="890" y="148">injection scan · proceeds</text>
@@ -81,8 +81,9 @@
   <text class="mono" x="492" y="219">one call per submission · temp 0</text>
 
   <rect class="box" x="776" y="186" width="314" height="40"/>
-  <text class="lbl" x="786" y="204">citation validator</text>
-  <text class="mono" x="786" y="219">membership → quote → position → entailment</text>
+  <text class="lbl" x="786" y="202">citation validator · five layers</text>
+  <text class="mono" x="786" y="215">membership → quote → position → entailment</text>
+  <text class="mono" x="786" y="228">→ second read: gemma3:4b (local, cross-family)</text>
 
   <path class="edge" d="M760 206 L 772 206"/>
   <path class="edge" d="M560 178 L 560 182"/>
@@ -134,13 +135,18 @@
   <path class="edge" d="M340 548 L 376 548"/>
 
   <!-- ============ outputs ============ -->
-  <rect class="gcp" x="620" y="496" width="220" height="52"/>
-  <text class="lbl" x="632" y="518">Cloud Run service</text>
-  <text class="mono" x="632" y="535">karani-docket · click-to-locus</text>
+  <rect class="gcp" x="620" y="490" width="244" height="62"/>
+  <text class="lbl" x="632" y="510">Cloud Run service</text>
+  <text class="mono" x="632" y="526">karani-docket · click-to-locus</text>
+  <text class="mono" x="632" y="541" font-size="9">brief · replay · boundary · scholarship</text>
 
   <rect class="gcp" x="620" y="562" width="220" height="52"/>
   <text class="lbl" x="632" y="584">delivery</text>
   <text class="mono" x="632" y="601">one Drive folder · CSV export</text>
+
+  <rect class="gcp" x="620" y="628" width="220" height="40"/>
+  <text class="lbl" x="632" y="645">karani-arena</text>
+  <text class="mono" x="632" y="660">paste any essay · ephemeral · no grade</text>
 
   <path class="edge" d="M580 536 L 616 522"/>
   <path class="edge" d="M580 560 L 616 588"/>
@@ -165,7 +171,7 @@
 
   <!-- the CSV's grade column reads FROM grades, and only the instructor writes them -->
   <path d="M985 618 L 985 642 L 730 642 L 730 618" stroke="#5b6675" stroke-width="1.4" fill="none" stroke-dasharray="4 3" marker-end="url(#arw)"/>
-  <text class="mono" x="40" y="660">the CSV's grade column reads exclusively from grades/ — the pipeline contributes no verdict-bearing field to any delivered artifact</text>
+  <text class="mono" x="40" y="700">the CSV's grade column reads exclusively from grades/ — the pipeline contributes no verdict-bearing field to any delivered artifact</text>
 
   <!-- ============ footer ============ -->
   <line x1="40" y1="690" x2="1140" y2="690" stroke="#ddd8cf" stroke-width="1"/>
