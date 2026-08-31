@@ -255,9 +255,9 @@ temperature 0):
 | | |
 |---|---|
 | observations | 75 across 15 submissions |
-| first-attempt acceptance | **90.5%** (67 / 74) |
+| first-attempt acceptance | **85.1%** (63 / 74) |
 | entailment disagreement rate | **6.8%** (5 / 74), after the one revision cycle KAR-310 permits — 13.5% before it |
-| accepted after bounded retry | 7 |
+| accepted after bounded retry | 5 |
 | attempt cap reached → `NEEDS_HUMAN` | 1 |
 | warm-cache hit rate | **100%** (21 / 21) |
 | planted fixtures behaving as their manifest predicts | **6 of 6** |

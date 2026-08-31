@@ -19,7 +19,7 @@ deployed timings and the friction figures are not, and must not be spoken.
 | Credentials for live Vertex calls | ✅ green | Karani borrows the gcloud CLI token when ADC is absent |
 | Pinned model IDs resolve | ✅ green | both verified against live Vertex AI |
 | Recorded run + offline cache | ✅ green | 187 responses committed; `make demo` replays 21/21 |
-| Validation numbers measured | ✅ green | 90.5% first-attempt, 6.8% entailment disagreement |
+| Validation numbers measured | ✅ green | 85.1% first-attempt (63/74), 6.8% entailment disagreement — both derived from the committed log, not typed |
 | s07 injection catch | ✅ green | fires on the live run |
 | One escalated sheet for the hero edit | ✅ green | s01 and s02 both have escalations in the recorded run |
 | **Grades boundary verified on the deployed path** | ❌ **not green** | `pytest -m deployed` — **beat 7 is blocked on this**; see below |

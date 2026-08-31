@@ -252,8 +252,8 @@ not noise:
 | | |
 |---|---|
 | observations | 75 across 15 submissions |
-| first-attempt acceptance | 67 / 74 = **90.5%** |
-| accepted after bounded retry | 7 |
+| first-attempt acceptance | 63 / 74 = **85.1%** |
+| accepted after bounded retry | 5 |
 | attempt cap reached → `NEEDS_HUMAN` | 1 |
 | `no_evidence` | 1 (s12 c4, exactly as planted) |
 | injection detected, analysis proceeded | 1 (s07, exactly as planted) |

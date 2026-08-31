@@ -208,7 +208,7 @@ def overview_page(run: RenderedRun) -> str:
         f"<tr><td>{_e(ANOMALY_LABELS.get(a.kind, a.kind))}</td>"
         f"<td class='mono'><a href='/student/{_e(a.student_id)}'>{_e(a.student_id)}</a></td>"
         f"<td class='mono'>{_e(a.criterion_id or '—')}</td>"
-        f"<td>{_e(a.detail)}</td></tr>"
+        f"<td>{_e(lint_generated_text(a.detail).text)}</td></tr>"
         for a in run.anomalies
     )
 
@@ -322,8 +322,13 @@ def student_page(run: RenderedRun, student_id: str) -> str:
             else:
                 body += _locus(text, rendition, str(citation.get("span_id", "")), quote)
         elif obs.get("search_notes"):
+            # LINTED. `search_notes` is model-generated free text and it is mandatory on the
+            # no_evidence path -- the path the README showcases. It was HTML-escaped but never
+            # passed through the verdict lint, so it was the second-most-common generated
+            # string on the page and the second one to skip layer 4.
+            notes = lint_generated_text(str(obs["search_notes"]))
             body += (
-                f'<div class="notice">{_e(obs["search_notes"])}</div>'
+                f'<div class="notice">{_e(notes.text)}</div>'
                 '<p class="sub">A finding of absence is a claim about the search, not about '
                 "the work. It is recorded once and never retried.</p>"
             )

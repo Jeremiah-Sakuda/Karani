@@ -236,6 +236,33 @@ def render(run_id: str, events: list[Event]) -> RenderedRun:
             source = (
                 carried if isinstance(carried, dict) else (current.get(oid) or drafted.get(oid))
             )
+
+            # A draft promoted on the ATTEMPT-CAP branch is one the validator rejected -- twice.
+            # Rendering its citation put a span that does not exist and a quote appearing nowhere
+            # in the submission onto the instructor's sheet, in a blockquote, styled as the
+            # student's own words. That falsified "every evidence observation cites a real span"
+            # on the one screen where it matters.
+            #
+            # `rejected_criteria` was computed for exactly this case and never read.
+            #
+            # The escalation still renders -- the instructor is being asked to look at it -- but
+            # as an absence, because absence is what actually survived validation.
+            if (
+                source is not None
+                and not isinstance(carried, dict)
+                and (sid, str(source.get("criterion_id", ""))) in rejected_criteria
+            ):
+                source = {
+                    **source,
+                    "kind": "no_evidence",
+                    "citation": None,
+                    "search_notes": (
+                        "The proposed citations for this criterion failed validation on every "
+                        "permitted attempt and were discarded. Nothing is shown here because "
+                        "nothing passed; every attempt remains in the event log."
+                    ),
+                }
+
             if source is not None:
                 current[oid] = {
                     **source,

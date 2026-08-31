@@ -31,7 +31,7 @@
     }
   },
   "validation": {
-    "_note": "Measured on a live 16-submission Vertex AI run (run-recorded-p2, gemini-3.6-flash + gemini-3.5-flash-lite, temperature 0).",
+    "_note": "Recomputed from fixtures/recorded-run.jsonl by scripts/update_metrics.py -- the same committed log the docket renders. An earlier hand-written figure said 90.5% (67/74); 67 counted observations 'not rejected on attempt 1', which folds in the 4 that were ESCALATED rather than accepted. The docket's own screen said 63 the whole time.",
     "observations_total": {
       "value": 75,
       "unit": "count",
@@ -40,10 +40,10 @@
       "surface": "local"
     },
     "first_attempt_acceptance_rate": {
-      "value": 0.9054,
+      "value": 0.8514,
       "unit": "fraction",
-      "method": "accepted evidence observations needing no retry, over all evidence observations",
-      "measured_at": "2026-08-13T18:13:01.275834+00:00",
+      "method": "ObservationAccepted events with attempts==1, over evidence-shaped observations (accepted + escalated). Derived from the log, never typed.",
+      "measured_at": "2026-08-31T16:02:47.482786+00:00",
       "surface": "local"
     },
     "entailment_disagreement_rate": {
@@ -90,6 +90,34 @@
       "unit": "count",
       "method": "live run with an empty cache, 16 submissions",
       "measured_at": "2026-08-13T18:13:01.275834+00:00",
+      "surface": "local"
+    },
+    "accepted_first_attempt": {
+      "value": 63,
+      "unit": "count",
+      "method": "ObservationAccepted with attempts==1",
+      "measured_at": "2026-08-31T16:02:47.482786+00:00",
+      "surface": "local"
+    },
+    "accepted_after_retry": {
+      "value": 5,
+      "unit": "count",
+      "method": "ObservationAccepted with attempts==2. NOT the count of attempt-2 drafts -- some of those escalated.",
+      "measured_at": "2026-08-31T16:02:47.482786+00:00",
+      "surface": "local"
+    },
+    "escalated_needs_human": {
+      "value": 6,
+      "unit": "count",
+      "method": "NeedsHumanReview events",
+      "measured_at": "2026-08-31T16:02:47.482786+00:00",
+      "surface": "local"
+    },
+    "no_evidence": {
+      "value": 1,
+      "unit": "count",
+      "method": "NoEvidenceRecorded events",
+      "measured_at": "2026-08-31T16:02:47.482786+00:00",
       "surface": "local"
     }
   },
@@ -191,42 +219,42 @@
       "value": 15,
       "unit": "count",
       "method": "counted by freezing every file the local source discovers",
-      "measured_at": "2026-08-13T18:16:21.912017+00:00",
+      "measured_at": "2026-08-31T16:06:49.035141+00:00",
       "surface": "local"
     },
     "submissions_unparseable": {
       "value": 1,
       "unit": "count",
       "method": "files that raised UnparseableSource during freeze",
-      "measured_at": "2026-08-13T18:16:21.912017+00:00",
+      "measured_at": "2026-08-31T16:06:49.035141+00:00",
       "surface": "local"
     },
     "words_total": {
       "value": 14304,
       "unit": "count",
       "method": "whitespace-split over normalized rendition text",
-      "measured_at": "2026-08-13T18:16:21.912017+00:00",
+      "measured_at": "2026-08-31T16:06:49.035141+00:00",
       "surface": "local"
     },
     "citable_spans_total": {
       "value": 138,
       "unit": "count",
       "method": "span registries minted from the frozen renditions",
-      "measured_at": "2026-08-13T18:16:21.912017+00:00",
+      "measured_at": "2026-08-31T16:06:49.035141+00:00",
       "surface": "local"
     },
     "planted_problems_total": {
       "value": 6,
       "unit": "count",
       "method": "enumerated in fixtures/MANIFEST.md",
-      "measured_at": "2026-08-13T18:16:21.912017+00:00",
+      "measured_at": "2026-08-31T16:06:49.035141+00:00",
       "surface": "local"
     },
     "planted_problems_found": {
       "value": 6,
       "unit": "count",
       "method": "each plant re-checked against live pipeline behaviour, not against the manifest",
-      "measured_at": "2026-08-13T18:16:21.912017+00:00",
+      "measured_at": "2026-08-31T16:06:49.035141+00:00",
       "surface": "local"
     },
     "planted_problems_detail": {
@@ -240,7 +268,7 @@
       },
       "unit": "map",
       "method": "per-plant behavioural check",
-      "measured_at": "2026-08-13T18:16:21.912017+00:00",
+      "measured_at": "2026-08-31T16:06:49.035141+00:00",
       "surface": "local"
     }
   },
@@ -250,14 +278,14 @@
       "value": 24,
       "unit": "count",
       "method": "folded from fixtures/golden-log.jsonl",
-      "measured_at": "2026-08-13T18:16:21.912017+00:00",
+      "measured_at": "2026-08-31T16:06:49.035141+00:00",
       "surface": "local"
     },
     "sheets": {
       "value": 6,
       "unit": "count",
       "method": "evidence sheets produced by the fold",
-      "measured_at": "2026-08-13T18:16:21.912017+00:00",
+      "measured_at": "2026-08-31T16:06:49.035141+00:00",
       "surface": "local"
     },
     "terminal_outcomes": {
@@ -271,23 +299,23 @@
       },
       "unit": "map",
       "method": "counted by render(); all six must be non-zero (asserted by tests/test_replay.py)",
-      "measured_at": "2026-08-13T18:16:21.912017+00:00",
+      "measured_at": "2026-08-31T16:06:49.035141+00:00",
       "surface": "local"
     },
     "range_hash": {
       "value": "355e9350af2d7b73c642f46615e670b5d70e3dcb5a62210c2d3633b5b51970c4",
       "unit": "sha256",
       "method": "hash over the content hashes of every consumed event",
-      "measured_at": "2026-08-13T18:16:21.912017+00:00",
+      "measured_at": "2026-08-31T16:06:49.035141+00:00",
       "surface": "local"
     }
   },
   "suite": {
     "tests_collected": {
-      "value": 154,
+      "value": 169,
       "unit": "count",
       "method": "pytest --collect-only, default markers (no credentials, no emulator, no model calls)",
-      "measured_at": "2026-08-13T18:16:21.912017+00:00",
+      "measured_at": "2026-08-31T16:06:49.035141+00:00",
       "surface": "local"
     }
   }

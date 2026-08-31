@@ -175,6 +175,11 @@ bind_events_db karani-docket
 bind karani-analysis "roles/aiplatform.user"
 bind karani-ingest   "roles/storage.objectViewer"
 
+# Cloud Scheduler authenticates AS karani-analysis to POST jobs:run. Without run.invoker that
+# POST returns 403 and the nightly trigger never fires -- the unattended-overnight premise
+# fails on night one, silently, with the schedule looking perfectly healthy in the console.
+bind karani-analysis "roles/run.invoker"
+
 # Deliberately NOT bound anywhere: any role granting datastore.entities.update or .delete;
 # any Firestore role without the events-database condition; any access at all to
 # "$GRADES_DB". The instructor's authenticated session is the only writer of grades, and it
