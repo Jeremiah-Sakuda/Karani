@@ -1,9 +1,12 @@
 """The video run-book may only tell you to film things the recorded run contains."""
 
 from __future__ import annotations
+
 import re
 from pathlib import Path
+
 import pytest
+
 from karani.render import render
 from karani.store.local import read_jsonl_log
 
