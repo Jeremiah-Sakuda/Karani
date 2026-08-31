@@ -195,6 +195,50 @@ def test_client_surface_rejects_event_update():
 # --- deployed: the server path ---------------------------------------------------------
 
 
+def _pipeline_client(project: str, database: str):
+    """A Firestore client authenticated as `karani-analysis`, whoever runs the test.
+
+    The deployed denial tests originally used ambient credentials, which measured the
+    *operator's* identity rather than the pipeline's. Run by the project owner -- the person
+    most likely to run them -- the grade-create probe would succeed, the test would fail,
+    and the failure would say nothing about the boundary: an owner can write anywhere. The
+    only identity whose denial means anything is the one the bindings are about.
+
+    Impersonation, not key files: `gcloud auth print-access-token
+    --impersonate-service-account` requires the operator to hold TokenCreator on that SA
+    and mints a token that IS the pipeline identity for the next hour. If impersonation is
+    not available the test SKIPS with the exact grant to run -- it must not fall back to
+    ambient credentials, because a denial measured on the wrong identity is the false-green
+    this file exists to prevent.
+    """
+    import subprocess
+
+    from google.cloud import firestore
+    from google.oauth2.credentials import Credentials
+
+    sa = f"karani-analysis@{project}.iam.gserviceaccount.com"
+    try:
+        token = subprocess.run(
+            ["gcloud", "auth", "print-access-token", f"--impersonate-service-account={sa}"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        ).stdout.strip()
+    except Exception:  # noqa: BLE001
+        token = ""
+    if not token:
+        pytest.skip(
+            f"cannot impersonate {sa}. Grant yourself TokenCreator on that one SA:\n"
+            f"  gcloud iam service-accounts add-iam-policy-binding {sa} \\\n"
+            f"    --member=user:$(gcloud config get-value account) \\\n"
+            f"    --role=roles/iam.serviceAccountTokenCreator"
+        )
+    return firestore.Client(
+        project=project, database=database, credentials=Credentials(token=token)
+    )
+
+
 @pytest.mark.deployed
 def test_deployed_pipeline_sa_cannot_CREATE_a_fresh_grade_document():
     """Property (KAR-312): the operation the granted permission would authorise is denied.
@@ -221,19 +265,18 @@ def test_deployed_pipeline_sa_cannot_CREATE_a_fresh_grade_document():
     if not project:
         pytest.skip("GOOGLE_CLOUD_PROJECT is not set")
 
-    from google.api_core.exceptions import NotFound, PermissionDenied
-    from google.cloud import firestore
+    from google.api_core.exceptions import PermissionDenied
 
     from karani.config import GRADES_DATABASE
 
     victim = f"probe-{uuid.uuid4().hex}"
+    client = _pipeline_client(project, GRADES_DATABASE)
 
-    try:
-        client = firestore.Client(project=project, database=GRADES_DATABASE)
-    except NotFound:
-        pytest.skip(f"grades database {GRADES_DATABASE} does not exist yet; run bootstrap_gcp.sh")
-
-    with pytest.raises((PermissionDenied, NotFound)):
+    # `PermissionDenied` alone. `NotFound` used to be in this tuple, which meant a project
+    # where the grades database was never created -- the boundary having nothing to guard --
+    # passed the test that exists to prove the boundary holds. A judge panel flagged it as a
+    # false-green, and it was.
+    with pytest.raises(PermissionDenied):
         client.collection("grades").document(victim).create(
             {"grade": "A", "actor": "pipeline", "student_id": victim}
         )
@@ -252,17 +295,13 @@ def test_deployed_pipeline_sa_cannot_create_anywhere_in_the_grades_database():
     if not project:
         pytest.skip("GOOGLE_CLOUD_PROJECT is not set")
 
-    from google.api_core.exceptions import NotFound, PermissionDenied
-    from google.cloud import firestore
+    from google.api_core.exceptions import PermissionDenied
 
     from karani.config import GRADES_DATABASE
 
-    try:
-        client = firestore.Client(project=project, database=GRADES_DATABASE)
-    except NotFound:
-        pytest.skip(f"grades database {GRADES_DATABASE} does not exist yet")
+    client = _pipeline_client(project, GRADES_DATABASE)
 
-    with pytest.raises((PermissionDenied, NotFound)):
+    with pytest.raises(PermissionDenied):
         client.collection(f"anything-{uuid.uuid4().hex}").document("x").create({"grade": "A"})
 
 
@@ -279,11 +318,9 @@ def test_deployed_pipeline_sa_CAN_still_create_events():
     if not project:
         pytest.skip("GOOGLE_CLOUD_PROJECT is not set")
 
-    from google.cloud import firestore
-
     from karani.config import EVENTS_DATABASE
 
-    client = firestore.Client(project=project, database=EVENTS_DATABASE)
+    client = _pipeline_client(project, EVENTS_DATABASE)
     probe = f"probe-{uuid.uuid4().hex}"
     client.collection("runs").document(probe).collection("events").document("e1").create(
         {"step": "RunStarted", "run_id": probe}
@@ -299,11 +336,10 @@ def test_deployed_analysis_sa_cannot_mutate_an_event():
         pytest.skip("GOOGLE_CLOUD_PROJECT is not set")
 
     from google.api_core.exceptions import PermissionDenied
-    from google.cloud import firestore
 
     from karani.config import EVENTS_DATABASE
 
-    client = firestore.Client(project=project, database=EVENTS_DATABASE)
+    client = _pipeline_client(project, EVENTS_DATABASE)
     doc = client.collection("runs").document("run-iam-probe").collection("events").document("probe")
     with contextlib.suppress(Exception):
         # Already present from an earlier probe run is fine; the update below is the assertion.
