@@ -141,29 +141,49 @@ an upsert that can be denied for wanting *update* permission — so it would sho
 `PERMISSION_DENIED` on camera while the operation the role actually authorises still worked.
 A denial that proves nothing is worse than no denial, because it is believed.
 
-**On screen, live console, not a screenshot:**
+**These are the verified commands — the previous version of this beat was un-filmable and
+would have lied in whichever direction it failed.** It said `gcloud config set account <SA>`,
+which switches gcloud to an account it holds no credential for, and then ran a Python client
+on *default* credentials — the operator's own. On camera that either dies with an auth error
+that looks like a denial while proving nothing, or (with ADC configured) runs as the project
+owner and **succeeds** — a grade written on camera, in the beat that exists to show grades
+cannot be written. Same defect class as beat 6: a script drifting from what the system
+actually does, caught only by executing it.
+
+The working mechanism is impersonation. It requires one grant your account already has
+(TokenCreator on the analysis SA only), and gcloud's own warning line — *"All API calls will
+be executed as [karani-analysis@…]"* — appears right above the denial, telling the viewer
+exactly which identity was refused. Do not crop it out; it is the proof of who is asking.
+
+**On screen, live console, not a screenshot** (run verbatim; verified live 2026-08-31):
 
 ```bash
-gcloud config set account karani-analysis@<project>.iam.gserviceaccount.com
+SA=karani-analysis@asili-xprize-2026.iam.gserviceaccount.com
+TOKEN=$(gcloud auth print-access-token --impersonate-service-account=$SA)
 
 # The operation datastore.entities.create authorises: a FRESH document in the grades database.
-python - <<'PY'
+KARANI_TOKEN="$TOKEN" .venv/bin/python - <<'PY'
+import os
 from google.cloud import firestore
-db = firestore.Client(project="<project>", database="karani-grades")
+from google.oauth2.credentials import Credentials
+db = firestore.Client(project="asili-xprize-2026", database="karani-grades",
+                      credentials=Credentials(token=os.environ["KARANI_TOKEN"]))
 db.collection("grades").document("probe-live-demo").create({"grade": "A"})
 PY
-# expect: PERMISSION_DENIED
+# prints: PermissionDenied: 403 Missing or insufficient permissions.
 ```
 
 **Say:** *"That's not a policy. That's IAM — and grades aren't even in the same database."*
 
-**Precondition:** `pytest -m deployed` must pass first. It runs this exact attack plus a
-create in a collection nobody has named, because the boundary is the database binding rather
-than a collection's spelling.
+**Precondition — MET.** `GOOGLE_CLOUD_PROJECT=asili-xprize-2026 .venv/bin/pytest -m deployed`
+passed 4/4 on 2026-08-31 against the live deployment, running as the impersonated pipeline
+SA: the fresh-create denial, the anywhere-in-the-database denial, the events-still-writable
+complement, and the event-mutation denial. Re-run it the day you film; it takes eight
+seconds.
 
-**Property:** the boundary is enforced, not asserted. Until the deployed tests pass, the
-language discipline holds: say *"no field can carry a verdict into any downstream system"* —
-never "structurally impossible".
+**Property:** the boundary is enforced, not asserted — and as of today, *demonstrated*. The
+language discipline is released: "structurally impossible" is now a claim with a green test
+behind it.
 
 ## Beat 8 — 2:55–3:15 · ratify, and it lands where they already work
 

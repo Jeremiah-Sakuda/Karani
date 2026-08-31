@@ -12,7 +12,7 @@ passing item elsewhere.
 |---|---|---|
 | Gemini 3.5 or newer, via Gemini API or Vertex AI | `gemini-3.6-flash` (analysis) and `gemini-3.5-flash-lite` (entailment, lint assist), via **Vertex AI**. Pinned ID strings, never aliases. Both are ≥3.5. See [DEVIATIONS.md](DEVIATIONS.md) D-001 for why the PRD's `gemini-3.5-pro` was not used — it does not exist — and why `gemini-3.1-pro-preview` would have **failed** this requirement | **VERIFIED.** Both IDs resolved against live Vertex AI, and 187 responses from two real 16-submission runs are committed in `fixtures/cache/` |
 | ≥1 Google Agent Framework | **Google ADK** (orchestration) and **GenAI SDK** (model access), dual-listed | Pinned; see [antigravity/decision.md](antigravity/decision.md) |
-| ≥1 Google Cloud infrastructure service | Cloud Run Jobs (analysis fan-out), Cloud Run service (docket), Firestore (event log + claims), Cloud Scheduler (nightly trigger) | Scripted and complete (`scripts/bootstrap_gcp.sh`, `scripts/deploy.sh`); **NOT YET DEPLOYED** — this is the one mandatory requirement still unapplied |
+| ≥1 Google Cloud infrastructure service | Cloud Run Jobs (analysis fan-out), Cloud Run service (docket), Firestore (two named databases), Cloud Scheduler (nightly trigger, ENABLED, `0 3 * * *`) | **DEPLOYED 2026-08-31** to `asili-xprize-2026`. Docket serving logged-out; `pytest -m deployed` passing 4/4 as the impersonated pipeline SA — the grade-create denial is asserted against the live IAM policy, not an emulator |
 
 ## Category
 
@@ -92,7 +92,7 @@ real company or person is named as a bad actor in any fixture, test, comment, or
 
 | Item | Status |
 |---|---|
-| Hosted project URL, loads logged-out | **OPEN** |
+| Hosted project URL, loads logged-out | **CLOSED 2026-08-31.** https://karani-docket-u42sxjnqkq-uc.a.run.app — verified 200 logged-out via plain curl (no auth headers, no cookies), challenge box live at /challenge. Reads are public; /edit, /ratify and /grade require the instructor token (KAR-414) |
 | Public repository URL | https://github.com/Jeremiah-Sakuda/Karani |
 | README with spin-up instructions, `make demo` on line 1 | **DONE** — verified from a clean clone |
 | Architecture diagram | **DONE** — `docs/architecture/diagram_a_system.svg` (+ PNG) and `diagram_b_identity.svg`, both embedded in the README |

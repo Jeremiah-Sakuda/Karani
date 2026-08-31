@@ -153,7 +153,7 @@ masked, only flagged, and only when it evaluates their own work.
 
 ### Links
 
-- **Hosted docket:** `[URL]` · public challenge box at `[URL]/challenge`
+- **Hosted docket:** https://karani-docket-u42sxjnqkq-uc.a.run.app · public challenge box at https://karani-docket-u42sxjnqkq-uc.a.run.app/challenge
 - **Repository:** https://github.com/Jeremiah-Sakuda/Karani
 - **Demo video:** `[URL]`
 - **Blog:** `[URL]`

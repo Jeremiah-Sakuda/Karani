@@ -41,7 +41,7 @@ live in a **separate Firestore database** with the events binding IAM-conditione
 If you already ran `bootstrap_gcp.sh` before this change, run it again — it is idempotent, and
 it now creates two databases and binds with a condition.
 
-**Do not record the `PERMISSION_DENIED` beat until `pytest -m deployed` passes.** The old beat
+**The `PERMISSION_DENIED` beat is cleared to record: `pytest -m deployed` passed 4/4 on 2026-08-31 against the live deployment.** The old beat
 would have filmed a `.set()`, which can be denied for the wrong reason while a `.create()`
 still succeeds — a denial that proves nothing.
 
