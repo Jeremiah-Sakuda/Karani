@@ -11,7 +11,7 @@ that cannot be recovered by working harder later.
 |---|---|
 | Enable billing | Switched to **`asili-xprize-2026`**, which already has it. `asili-61171` is untouched |
 | `gcloud auth application-default login` | Not needed. Karani falls back to the gcloud CLI's own token when ADC is absent — same identity, obtained differently, nothing stored |
-| Record the offline demo cache | **Done.** 187 responses from a real 16-submission run, committed. `make demo` runs the whole pipeline offline, 21 of 21 calls from cache |
+| Record the offline demo cache | **Done.** 187 responses from two real 16-submission runs (`p1` 93, `p2` 94), committed. `make demo` replays `p2` offline, 94 of 94 calls from cache — 21 analysis, 73 entailment |
 | Confirm the pinned model IDs resolve | **Done.** `gemini-3.6-flash` and `gemini-3.5-flash-lite` both verified against live Vertex AI |
 | Measure the entailment disagreement rate | **Done.** 13.5% → the one permitted revision cycle → 6.8%. Accept branch. Recorded in FINDINGS and metrics.json |
 

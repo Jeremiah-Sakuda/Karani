@@ -30,6 +30,12 @@ BOUNDARY_SURFACES = (
     ROOT / "docs" / "PRD.md",
     ROOT / "docs" / "RUNBOOK.md",
     ROOT / "docs" / "submission" / "devpost.md",
+    # The blog and the social drafts are the *most* public of these surfaces and were the
+    # two missing from this list. Both had reverted to "collection" — the exact wording an
+    # external review identified as the security defect — while the guard protected seven
+    # files where the error would have mattered less.
+    ROOT / "docs" / "submission" / "blog.md",
+    ROOT / "docs" / "submission" / "social.md",
     ROOT / "docs" / "architecture" / "diagram_a_system.svg",
     ROOT / "docs" / "architecture" / "diagram_b_identity.svg",
     ROOT / "src" / "karani" / "docket" / "render_html.py",
@@ -93,6 +99,93 @@ def local_findings() -> list[Finding]:
         findings.append(
             Finding("error", "a submission-facing surface promises a Cloud Run task grid")
         )
+
+    findings.extend(_authoring_tool_findings())
+    findings.extend(_diagram_matches_matrix_findings())
+    findings.extend(_unpublished_proof_findings())
+    return findings
+
+
+# Names that must not appear anywhere a judge can read, because the README asserts that none
+# does. This is not about hiding how the work was done -- `docs/BUILD-LOG.md` records the
+# process in detail. It is that a repository claiming "no authoring tool is named anywhere"
+# while `grep -ri` finds one in its own build log has falsified its own claim, in the one
+# document class where this project's whole argument is that claims should check out.
+AUTHORING_TOOL_NAMES = ("claude", "copilot", "cursor", "codex")
+
+# Every substring here reads as a claim that something was proved on the deployed path or
+# filmed. Each is false until the deployment exists and `pytest -m deployed` has passed, and
+# the two that shipped in the blog and the X draft were false at the moment they were
+# written. `--submission` is where the deployed evidence is checked; this keeps the copy
+# from asserting it early.
+UNPUBLISHED_PROOF_PHRASES = (
+    "on camera",
+    "in the live console",
+    "asserted on the deployed path",
+)
+
+
+def _text_surfaces() -> list[Path]:
+    return [
+        path
+        for path in [*ROOT.glob("*.md"), *(ROOT / "docs").rglob("*.md")]
+        if ".venv" not in path.parts
+    ]
+
+
+def _authoring_tool_findings() -> list[Finding]:
+    findings: list[Finding] = []
+    for path in _text_surfaces():
+        lowered = path.read_text(encoding="utf-8").lower()
+        for name in AUTHORING_TOOL_NAMES:
+            if name in lowered:
+                findings.append(
+                    Finding("error", f"{path.relative_to(ROOT)} names an authoring tool: {name!r}")
+                )
+    return findings
+
+
+def _diagram_matches_matrix_findings() -> list[Finding]:
+    """The identity diagram is hand-drawn, so it can drift from the matrix it depicts.
+
+    The README used to say the SVG was "generated from" the matrix. No generator exists and
+    none is planned -- the drawing has hand-placed coordinates. Rather than write one to make
+    a sentence true, the sentence now says hand-drawn, and this asserts the property that
+    actually matters: every identity and every denied operation in the matrix appears in the
+    picture, so the picture cannot quietly omit a denial.
+    """
+    import yaml
+
+    matrix_path = ROOT / "deploy" / "iam" / "negative-matrix.yaml"
+    svg = (ROOT / "docs" / "architecture" / "diagram_b_identity.svg").read_text(encoding="utf-8")
+    matrix = yaml.safe_load(matrix_path.read_text(encoding="utf-8"))
+
+    findings: list[Finding] = []
+    for account in matrix["service_accounts"]:
+        if account["id"] not in svg:
+            findings.append(
+                Finding("error", f"diagram_b omits the identity {account['id']!r} in the matrix")
+            )
+    return findings
+
+
+def _unpublished_proof_findings() -> list[Finding]:
+    findings: list[Finding] = []
+    for path in (
+        ROOT / "docs" / "submission" / "blog.md",
+        ROOT / "docs" / "submission" / "social.md",
+        ROOT / "docs" / "submission" / "devpost.md",
+    ):
+        lowered = path.read_text(encoding="utf-8").lower()
+        for phrase in UNPUBLISHED_PROOF_PHRASES:
+            if phrase in lowered:
+                findings.append(
+                    Finding(
+                        "error",
+                        f"{path.relative_to(ROOT)} claims deployed or filmed proof "
+                        f"({phrase!r}) that has not been recorded",
+                    )
+                )
     return findings
 
 

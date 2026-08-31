@@ -81,14 +81,14 @@
     "cache_hit_rate_warm": {
       "value": 1.0,
       "unit": "fraction",
-      "method": "second offline run over the same fixtures: 21 of 21 model calls served from the committed cache",
-      "measured_at": "2026-08-13T18:13:01.275834+00:00",
+      "method": "second offline run over the same fixtures: 94 of 94 model calls served from the committed cache -- 21 analysis and 73 entailment. This read '21 of 21' and counted analysis only; entailment goes through the same client and the same cache.",
+      "measured_at": "2026-08-31T16:35:22.741822+00:00",
       "surface": "local"
     },
     "model_calls_cold": {
       "value": 21,
       "unit": "count",
-      "method": "live run with an empty cache, 16 submissions",
+      "method": "live run with an empty cache, 16 submissions -- analysis calls only; see model_calls_warm for the all-call figure",
       "measured_at": "2026-08-13T18:13:01.275834+00:00",
       "surface": "local"
     },
@@ -118,6 +118,20 @@
       "unit": "count",
       "method": "NoEvidenceRecorded events",
       "measured_at": "2026-08-31T16:02:47.482786+00:00",
+      "surface": "local"
+    },
+    "model_calls_warm": {
+      "value": 94,
+      "unit": "count",
+      "method": "every ModelClient call on the offline p2 replay: 21 analysis + 73 entailment",
+      "measured_at": "2026-08-31T16:35:22.741822+00:00",
+      "surface": "local"
+    },
+    "recorded_cache_entries": {
+      "value": 187,
+      "unit": "count",
+      "method": "files under fixtures/cache/, from TWO live 16-submission runs: p1 93, p2 94. The README said 'a real run', singular.",
+      "measured_at": "2026-08-31T16:35:22.741822+00:00",
       "surface": "local"
     }
   },
@@ -219,56 +233,60 @@
       "value": 15,
       "unit": "count",
       "method": "counted by freezing every file the local source discovers",
-      "measured_at": "2026-08-31T16:06:49.035141+00:00",
+      "measured_at": "2026-08-31T16:36:36.321705+00:00",
       "surface": "local"
     },
     "submissions_unparseable": {
       "value": 1,
       "unit": "count",
       "method": "files that raised UnparseableSource during freeze",
-      "measured_at": "2026-08-31T16:06:49.035141+00:00",
+      "measured_at": "2026-08-31T16:36:36.321705+00:00",
       "surface": "local"
     },
     "words_total": {
       "value": 14304,
       "unit": "count",
       "method": "whitespace-split over normalized rendition text",
-      "measured_at": "2026-08-31T16:06:49.035141+00:00",
+      "measured_at": "2026-08-31T16:36:36.321705+00:00",
       "surface": "local"
     },
     "citable_spans_total": {
       "value": 138,
       "unit": "count",
       "method": "span registries minted from the frozen renditions",
-      "measured_at": "2026-08-31T16:06:49.035141+00:00",
+      "measured_at": "2026-08-31T16:36:36.321705+00:00",
       "surface": "local"
     },
     "planted_problems_total": {
-      "value": 6,
+      "value": 10,
       "unit": "count",
-      "method": "enumerated in fixtures/MANIFEST.md",
-      "measured_at": "2026-08-31T16:06:49.035141+00:00",
+      "method": "every planted challenge enumerated in fixtures/MANIFEST.md",
+      "measured_at": "2026-08-31T16:36:36.321705+00:00",
       "surface": "local"
     },
     "planted_problems_found": {
       "value": 6,
       "unit": "count",
-      "method": "each plant re-checked against live pipeline behaviour, not against the manifest",
-      "measured_at": "2026-08-31T16:06:49.035141+00:00",
+      "method": "each plant re-checked against the rendered recorded run. The four that fail (s03, s08, s09, s15) are predictions the manifest makes that the run does not bear out -- the model was more generous toward weak submissions than the fixture design expected. They are listed rather than dropped.",
+      "measured_at": "2026-08-31T16:36:36.321705+00:00",
       "surface": "local"
     },
     "planted_problems_detail": {
       "value": {
-        "s07-injection": true,
-        "s16-unparseable": true,
-        "s06-pdf-chart": true,
-        "s11-pdf": true,
-        "s14-outlier": true,
-        "s08-under-length": true
+        "s07-injection-flagged-analysis-proceeds": true,
+        "s16-unparseable-yields-no-rendition": true,
+        "s12-no-evidence-on-c4": true,
+        "s12-absence-never-retried": true,
+        "s14-outlier-handled-without-special-casing": true,
+        "s06-dangling-figure-reference-not-fabricated": true,
+        "s03-weakness-yields-absence-or-escalation": false,
+        "s08-under-length-yields-absence": false,
+        "s09-over-read-escalates-on-c4": false,
+        "s15-is-the-entailment-fixture": false
       },
       "unit": "map",
       "method": "per-plant behavioural check",
-      "measured_at": "2026-08-31T16:06:49.035141+00:00",
+      "measured_at": "2026-08-31T16:36:36.321705+00:00",
       "surface": "local"
     }
   },
@@ -278,14 +296,14 @@
       "value": 24,
       "unit": "count",
       "method": "folded from fixtures/golden-log.jsonl",
-      "measured_at": "2026-08-31T16:06:49.035141+00:00",
+      "measured_at": "2026-08-31T16:36:36.321705+00:00",
       "surface": "local"
     },
     "sheets": {
       "value": 6,
       "unit": "count",
       "method": "evidence sheets produced by the fold",
-      "measured_at": "2026-08-31T16:06:49.035141+00:00",
+      "measured_at": "2026-08-31T16:36:36.321705+00:00",
       "surface": "local"
     },
     "terminal_outcomes": {
@@ -299,23 +317,23 @@
       },
       "unit": "map",
       "method": "counted by render(); all six must be non-zero (asserted by tests/test_replay.py)",
-      "measured_at": "2026-08-31T16:06:49.035141+00:00",
+      "measured_at": "2026-08-31T16:36:36.321705+00:00",
       "surface": "local"
     },
     "range_hash": {
       "value": "355e9350af2d7b73c642f46615e670b5d70e3dcb5a62210c2d3633b5b51970c4",
       "unit": "sha256",
       "method": "hash over the content hashes of every consumed event",
-      "measured_at": "2026-08-31T16:06:49.035141+00:00",
+      "measured_at": "2026-08-31T16:36:36.321705+00:00",
       "surface": "local"
     }
   },
   "suite": {
     "tests_collected": {
-      "value": 169,
+      "value": 235,
       "unit": "count",
       "method": "pytest --collect-only, default markers (no credentials, no emulator, no model calls)",
-      "measured_at": "2026-08-31T16:06:49.035141+00:00",
+      "measured_at": "2026-08-31T16:36:36.321705+00:00",
       "surface": "local"
     }
   }

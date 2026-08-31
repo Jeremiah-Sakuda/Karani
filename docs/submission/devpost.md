@@ -79,29 +79,39 @@ The refusal is not a promise. It is checkable, right now, three ways:
 
 - **Try it.** The hosted docket has a public challenge box — no login, no quota. Ask it for a
   grade. It answers with the observation schema: *there is no field for what you asked for.*
-- **Read the test.** A parametrised test asserts every one of 27 verdict-shaped field names is
-  rejected by the schema individually.
-- **Watch the denial.** The demo video shows a pipeline service account attempting a write to
-  the grades database and receiving `PERMISSION_DENIED`, on the deployed path, in the live
-  console.
+- **Read the test.** A parametrised test asserts every verdict-shaped field name on the banned
+  list is rejected by the schema individually — and asserts the *reason* each rejection fires,
+  because an earlier version of it passed with the setting turned off.
+- **Read the boundary.** `deploy/iam/negative-matrix.yaml` enumerates every identity ×
+  operation × resource pair and the outcome each must produce. `pytest -m deployed` asserts
+  those denials against the deployed databases, and passing it is a release gate.
 
 And incumbents structurally cannot follow: **an auto-grader's revenue is the score.**
 
 ### The autonomy claim, precisely
 
-Not "it ran unattended." One unattended run produces **six visibly different consequences**,
-each with a distinct downstream effect: accepted first attempt · accepted after bounded retry ·
-`no_evidence` recorded and never retried · `NEEDS_HUMAN` · injection flagged with analysis
-proceeding anyway · abandoned at the join with the run completing around it.
+Not "it ran unattended." The system defines **six terminal outcomes**, each with a distinct
+downstream effect: accepted first attempt · accepted after bounded retry · `no_evidence`
+recorded and never retried · `NEEDS_HUMAN` · injection flagged with analysis proceeding
+anyway · abandoned at the join with the run completing around it.
+
+The recorded 16-submission run exercises **five** of them. `abandoned` is 0 — nothing hung,
+so nothing was abandoned. The sixth is exercised by the reference log and by a test that
+blocks a real worker and asserts the run completes around it at `T_max`. Six outcomes, not
+six labels on identical output; five of them on the run you can replay.
 
 ### Technologies
 
 - **Gemini** — `gemini-3.6-flash` (analysis), `gemini-3.5-flash-lite` (entailment, lint
   assist), via **Vertex AI**. Pinned ID strings, never aliases. Temperature pinned to 0 in
   code and recorded in `provenance{}` on every observation.
-- **Google ADK** — the agent topology: dispatcher, analyst workers, citation validator,
-  anomaly triage. Roles separated by *what each is allowed to conclude*, not by task. The
-  contract between them is a typed schema and a validated citation, not a conversation.
+- **Google ADK** — the agent topology, as a `SequentialAgent` of three nodes: `dispatcher`,
+  `analyst_validator`, `anomaly_triage`. Roles separated by *what each is allowed to
+  conclude*, not by task; the contract between them is a typed schema and a validated
+  citation, not a conversation. Stated plainly: these nodes orchestrate, they do not
+  deliberate — `analyst_validator` is one call into a bounded thread pool where the analysis
+  and the four-layer citation check actually happen. The reasoning is in the workers and the
+  validator, not in a conversation between agents.
 - **GenAI SDK** — model access, routed through a durable shared cache.
 - **Cloud Run Jobs** (analysis fan-out), **Cloud Run service** (docket), **Firestore**
   (append-only event log + claims), **Cloud Scheduler** (nightly trigger).

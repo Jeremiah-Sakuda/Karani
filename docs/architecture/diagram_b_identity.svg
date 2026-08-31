@@ -20,7 +20,7 @@
   <rect class="bg" x="0" y="0" width="1180" height="720"/>
 
   <text class="title" x="40" y="42">What each identity may do — and what it is denied</text>
-  <text class="cap" x="40" y="62">Least privilege stated as an argument. Local negative tests execute each denial; deployed fresh-create proof remains a release gate (KAR-312/313).</text>
+  <text class="cap" x="40" y="62">Least privilege stated as an argument. Local tests assert the declared policy; the deployed tests execute each denial and remain a release gate (KAR-312/313).</text>
 
   <text class="sect" x="40" y="104">GRANTED</text>
   <text class="sect" x="470" y="104">DENIED — LOCALLY ASSERTED; DEPLOYED PROOF PENDING</text>

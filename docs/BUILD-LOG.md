@@ -23,7 +23,7 @@ artifact, not a requirement.
 
 **Course corrections:**
 - > "You should have access to the google cloud cli, use the asili project for this"
-- > "The repo is brand new at https://github.com/Jeremiah-Sakuda/Karani I want frequent commits as you proceed, do not list claude as a contributor or co author of any commits"
+- > "The repo is brand new at https://github.com/Jeremiah-Sakuda/Karani I want frequent commits as you proceed, do not list [tooling] as a contributor or co author of any commits"
 
 **Outcome:** Repository skeleton per AGENTS.md, with the compliance tooling, gates, and
 measurement contract in place before any application logic. `.gitignore`, `gitleaks` config,
@@ -77,11 +77,13 @@ is the correct state for it today.
 
 **Course corrections:**
 - > "You should have access to the google cloud cli, use the asili project for this"
-- > "The repo is brand new at https://github.com/Jeremiah-Sakuda/Karani I want frequent commits as you proceed, do not list claude as a contributor or co author of any commits"
+- > "The repo is brand new at https://github.com/Jeremiah-Sakuda/Karani I want frequent commits as you proceed, do not list [tooling] as a contributor or co author of any commits"
 
 **Outcome:** Phases 0 through 6 built and pushed: the spine, the fixtures, the analysis path,
 the docket, delivery, the deploy scripts, both architecture diagrams, the README, the
-recording run-book, and the submission drafts. 154 tests; all five CI steps green.
+recording run-book, and the submission drafts. All five CI steps green. (The test count
+that stood here was a snapshot and went stale within the day; `make test` reports the
+current one, and no document should be restating a number that changes hourly.)
 
 The session's real value was the closing judging panel. Seven judges scored the submission
 against the contest rubric with a mandate to falsify its claims, and they earned their keep:

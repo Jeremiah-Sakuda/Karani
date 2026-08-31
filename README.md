@@ -7,12 +7,24 @@ make demo
 Zero credentials. Zero Java. Zero Docker. Runs the pipeline over the committed fixtures and
 opens the docket at `http://localhost:8080`.
 
-> **What `make demo` actually replays.** 187 model responses recorded from a real 16-submission
-> run against Vertex AI (`gemini-3.6-flash` + `gemini-3.5-flash-lite`, temperature 0), committed
-> to `fixtures/cache/`. The offline run serves 21 of 21 calls from that cache and produces
-> results identical to the live run. Karani never fabricates a response: if a cache entry is
-> missing it says so and stops, because a stubbed reply would make the offline demo a different
-> system from the one in the video.
+> **What `make demo` actually replays.** 187 model responses recorded from **two** real
+> 16-submission runs against Vertex AI (`gemini-3.6-flash` + `gemini-3.5-flash-lite`,
+> temperature 0), committed to `fixtures/cache/`: 93 from the `p1` prompt version and 94 from
+> `p2`. Both are kept because the pair is the evidence for the KAR-310 revision cycle — `p1`
+> measured 13.5% entailment disagreement, `p2` measured 6.8% — and deleting the losing run
+> would leave the published before-and-after resting on nothing.
+>
+> `make demo` replays `p2`, and serves **94 of 94** calls from the cache: 21 analysis calls
+> and 73 entailment calls. The figure here read "21 of 21" for a long time, counting only
+> analysis; the entailment layer goes through the same client and the same cache, and a
+> hit-rate that silently excluded three quarters of the calls was understating the thing it
+> existed to establish. The offline run produces results identical to the live one.
+>
+> Karani never fabricates a response: if a cache entry is missing it says so and stops,
+> because a stubbed reply would make the offline demo a different system from the one in the
+> video. That refusal is asserted by `tests/test_offline_never_fabricates.py` — it had no
+> test at all until a reviewer mutated the raise into `return '{"observations": []}'` and
+> watched the whole suite pass.
 
 ---
 
@@ -85,13 +97,13 @@ this repository.
 
 ![What each Karani identity may do and what it is denied: five per-stage service accounts, each with its granted roles and the specific operations it is denied, including every account's denial of writes to the grades database](docs/architecture/diagram_b_identity.svg)
 
-*Source: [diagram_b_identity.svg](docs/architecture/diagram_b_identity.svg), generated from [deploy/iam/negative-matrix.yaml](deploy/iam/negative-matrix.yaml), which [tests/test_iam_boundary.py](tests/test_iam_boundary.py) reads directly.*
+*Source: [diagram_b_identity.svg](docs/architecture/diagram_b_identity.svg), hand-drawn from [deploy/iam/negative-matrix.yaml](deploy/iam/negative-matrix.yaml), which [tests/test_iam_boundary.py](tests/test_iam_boundary.py) reads directly. The matrix is the authority; the diagram is a drawing of it, and `scripts/release_check.py` asserts they agree.*
 
 ## What it looks like
 
 ![The Karani class docket: a run header, a panel of six terminal-outcome counts, a table of submissions listed by identifier with chips for injection-flagged and insufficient sheets, per-criterion counts of evidence located and no-evidence findings, and an anomaly queue](docs/screenshots/docket-overview.png)
 
-The class overview. Six terminal outcomes from one unattended run, then the submissions —
+The class overview. The six terminal outcomes, then the submissions —
 **listed by identifier, with no sort control**, because the first thing anyone does with one
 is sort by something that proxies for quality and then read the top of the list as the best
 work. Every count is a length over the claims projection, never generated.
@@ -111,8 +123,9 @@ that defeats it.
 
 ## The six terminal outcomes
 
-The autonomy claim is not "it ran unattended." It is that **one unattended run produces six
-visibly different consequences**, each with a distinct downstream effect in the docket:
+The autonomy claim is not "it ran unattended." It is that a unattended run produces
+**visibly different consequences**, each with a distinct downstream effect in the docket,
+rather than one outcome wearing six labels:
 
 | Outcome | What it means | What happens next |
 |---|---|---|
@@ -122,6 +135,19 @@ visibly different consequences**, each with a distinct downstream effect in the 
 | `NEEDS_HUMAN` | Attempt cap reached, or entailment disagreed | Anomaly queue. Never retried past the cap |
 | `InjectionDetected` | Instruction-shaped text aimed at an automated reader | Flagged, logged — **and analysis proceeds** |
 | `TaskAbandoned` | No terminal event by the dispatcher's `T_max` | `excluded[]`. The run completes around it |
+
+**Five of the six on the recorded run, not six.** The committed 16-submission run in
+`fixtures/recorded-run.jsonl` — the one `make demo` replays and the screenshot above shows —
+ends with `abandoned: 0`. Nothing hung, so nothing was abandoned, which is the correct
+behaviour and not a demonstration of it. The sixth is exercised two other ways: by
+`fixtures/golden-log.jsonl`, which is hand-constructed precisely so that every rendering path
+has an example, and by `tests/test_join_liveness.py`, which blocks a real worker and asserts
+the dispatcher completes the run around it at `T_max`.
+
+This distinction is worth the paragraph because "six outcomes from one unattended run" is the
+autonomy claim, and it stood in this README, in the Devpost description, and in a social draft
+while the run underneath it produced five. A judge who counted the tiles would have found the
+zero before I did.
 
 ## Quickstart
 
@@ -259,8 +285,30 @@ temperature 0):
 | entailment disagreement rate | **6.8%** (5 / 74), after the one revision cycle KAR-310 permits — 13.5% before it |
 | accepted after bounded retry | 5 |
 | attempt cap reached → `NEEDS_HUMAN` | 1 |
-| warm-cache hit rate | **100%** (21 / 21) |
-| planted fixtures behaving as their manifest predicts | **6 of 6** |
+| warm-cache hit rate | **100%** (94 / 94 — 21 analysis, 73 entailment) |
+| planted fixtures behaving as their manifest predicts | **6 of 10 checks**, across 9 planted challenges |
+
+**On that last row.** It read "6 of 6" until a reviewer counted the manifest. There are nine
+planted challenges, not six; one of the six things being checked (`s11`) is not a planted
+challenge at all; and the published method said "re-checked against live pipeline behaviour"
+while four of the six checks were freeze-time file properties — `source_projection ==
+"pdf_text"`, `len(text.split()) < 500` — two of which restated a number the manifest itself
+already gives.
+
+The three omitted plants were not omitted at random: **they are the ones that fail.** The
+metric reported 6 of 6 over a set that was, in effect, selected by which checks passed.
+
+All nine are now checked, against the rendered run rather than the frozen file, and four
+predictions do not hold: `s03` and `s08` were designed so that weakness would produce
+*absence of findable evidence*, and both drew five ordinary cited observations with no
+`no_evidence` and no escalation; `s09`'s planted over-read did not fire; and `s15`, built to
+be the entailment fixture, produced no disagreement, while the five that occurred landed on
+`s01`, `s02`, and `s05`.
+
+That is a real finding and it is more useful than the six was. The model is consistently more
+willing to locate evidence in a weak submission than the fixture design predicted — which is
+precisely the failure mode this system exists to constrain, and it is why the entailment layer
+and the escalation path carry the weight they do rather than the drafting prompt.
 
 **Still "not yet measured", deliberately:** the dollar cost per run, every deployed-path
 timing, and the KAR-205 friction numbers. Nothing is deployed yet, and `gemini-3.6-flash` bills

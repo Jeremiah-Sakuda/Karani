@@ -233,7 +233,7 @@ no ranking, and no field anywhere in the system that could hold one —
 <a href="/challenge">try to make it give you a grade</a>.</div>
 {reference_banner}
 
-<h2>Six outcomes, one unattended run</h2>
+<h2>Terminal outcomes, one unattended run</h2>
 <div class="grid three">{tour}</div>
 
 <h2>Submissions</h2>

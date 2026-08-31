@@ -17,9 +17,15 @@ Hackathon.*
 I built an agent that reads student essays and refuses to grade them.
 
 Not "declines to". Cannot. There is no field on any record in the system that could hold a
-grade, the schema rejects fields it doesn't recognise, and the collection where grades
-actually live is one that every pipeline service account is denied write access to — asserted
-on the deployed path, not just in an emulator.
+grade, the schema rejects fields it doesn't recognise, and grades live in a **separate
+Firestore database** that every pipeline service account is denied write access to.
+
+A separate *collection*, which is what I built first, would not have done it: Firestore IAM
+does not grant below the database, so a role scoped to "the events collection" is really a
+role over everything beside it. A reviewer caught that. It is the single most useful piece
+of feedback I got, and the fix — a second named database, with the binding conditioned on
+the resource path — is the only part of this system where the security boundary is enforced
+by the platform rather than by my code being correct.
 
 That was the easy part. Here is what actually went wrong.
 
