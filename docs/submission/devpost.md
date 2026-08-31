@@ -17,6 +17,31 @@ text description field.
 **An autonomous overnight batch agent that prepares grading evidence for instructors and is
 architecturally incapable of issuing a grade.**
 
+One sentence for the skeptic who reads "batch LLM calls": the model calls are the cheapest
+part of this system — the contribution is the **constraint system around them**, five
+validation layers across two model families, an append-only event log a pure fold renders
+from, and a verdict that has no field to land in. Grading is the first instance of a pattern
+we think deserves a name — **verdict-incapable agents** — and the repository proves the
+pattern generalizes by running a second domain (scholarship review) through the same
+pipeline, unchanged.
+
+**One unattended run, six kinds of consequence** (the recorded run exercises five; nothing
+hung, so nothing was abandoned):
+
+| Outcome | Recorded run (16 subs) | Deployed scale run (150 subs) |
+|---|---|---|
+| accepted, first attempt | 63 | 442 |
+| accepted after bounded retry | 5 | 186 |
+| `no_evidence` — recorded, never retried | 1 | 76 |
+| `NEEDS_HUMAN` | 6 | 46 |
+| injection flagged, analysis proceeded | 1 | 0 |
+| abandoned, run completed around it | 0 | 0 |
+
+The scale column is a real Cloud Run Job execution on the deployed project: 150 submissions,
+745 observations, 2,451 events, 13.6 minutes on 15 workers, zero failures — and first-attempt
+acceptance at 70.4%, *lower* than the small corpus's 85.1%. Published because it is true, and
+because a metric that only improves with scale deserves suspicion.
+
 ### 1. The friction
 
 Instructor grading time is dominated by evidence-gathering, not judgment: close-reading each
@@ -62,6 +87,11 @@ Four layers, cheapest and most decisive first:
    carries and the validator recomputes.
 4. **Entailment** — does the passage actually support the claim? Disagreements route to a
    human and are **never retried**.
+5. **The cross-family second reader** — `gemma3:4b`, running locally via Ollama, re-answers
+   the entailment question for every citation the Gemini tier accepted. Entailment is the
+   one layer where the checker could share the generator's blind spots; a second model
+   family narrows that class. **No single model's judgment turns a draft into evidence.**
+   Unavailability is recorded as `second_reader: null` — not run, never a pass.
 
 Layer 3 is the one that earns its keep. Given a real quote lifted from paragraph 12 and
 attributed to paragraph 47, where the phrase genuinely occurs in both, layers 1 and 2 both
@@ -81,8 +111,21 @@ packet that re-verifies against its own event range.
 
 The refusal is not a promise. It is checkable, right now, three ways:
 
-- **Try it.** The hosted docket has a public challenge box — no login, no quota. Ask it for a
-  grade. It answers with the observation schema: *there is no field for what you asked for.*
+- **Try it on OUR corpus.** The hosted docket has a public challenge box — no login, no
+  quota. Ask it for a grade. It answers with the observation schema: *there is no field for
+  what you asked for.* (https://karani-docket-u42sxjnqkq-uc.a.run.app/challenge)
+- **Try it on YOUR essay.** The arena runs the *genuine pipeline* — live Gemini analysis,
+  the span registry, the injection scan, all five validation layers — on anything you paste,
+  and returns the evidence sheet with no grade. Paste a prompt injection: it is flagged and
+  analysis proceeds. Your text is analysed and not kept. (The arena's very first live test
+  found a real bug — an injection wrapped across a soft line break evaded the scanner — which
+  is the strongest argument for the page existing. The fix and the story are in the repo.)
+- **Watch the night.** `/replay` steps the committed event log in fold order — tiles
+  accumulating, escalations queueing — because "it ran unattended" is an assertion and forty
+  seconds of watching consequences differ is the receipt.
+- **Read the morning brief.** `/brief` is what the instructor actually receives: what needs
+  them, what is done, and the class-level pattern ("N of M submissions drew no evidence on
+  counterarguments," with cited examples) — delivered with every ratified Drive drop.
 - **Read the test.** A parametrised test asserts every verdict-shaped field name on the banned
   list is rejected by the schema individually — and asserts the *reason* each rejection fires,
   because an earlier version of it passed with the setting turned off.
