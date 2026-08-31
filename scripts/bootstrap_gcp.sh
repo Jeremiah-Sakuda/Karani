@@ -61,9 +61,15 @@ gcloud services enable \
 # first live call. The PRD pinned `gemini-3.5-pro`, which does not exist; that failure would
 # otherwise have surfaced after the architecture was frozen.
 say "Verifying pinned model IDs resolve"
-if command -v python3 >/dev/null && [[ -f src/karani/cli.py ]]; then
-  GOOGLE_CLOUD_PROJECT="$PROJECT" PYTHONPATH=src python3 -m karani.cli preflight || {
-    echo "WARNING: a pinned model ID did not resolve. Fix config.py before deploying." >&2
+# The venv interpreter when it exists: the system python3 may be outside the supported
+# range, and a preflight that fails on ITS dependencies reports a model problem that isn't.
+PREFLIGHT_PY="python3"
+[[ -x .venv/bin/python ]] && PREFLIGHT_PY=".venv/bin/python"
+if [[ -f src/karani/cli.py ]]; then
+  GOOGLE_CLOUD_PROJECT="$PROJECT" PYTHONPATH=src "$PREFLIGHT_PY" -m karani.cli preflight || {
+    echo "WARNING: a pinned model ID did not resolve against live Vertex." >&2
+    echo "         If both lines above say DefaultCredentialsError, the models are fine and" >&2
+    echo "         the problem is auth: run 'gcloud auth login' and re-run this script." >&2
   }
 fi
 
@@ -89,38 +95,29 @@ for db in "$EVENTS_DB" "$GRADES_DB"; do
   else
     echo "$db exists"
   fi
-  gcloud firestore databases update --database="$db" --delete-protection 2>/dev/null || true
+  # No silent failure here. This exact line used to end in '2>/dev/null || true', the
+  # update failed on an older gcloud, and both databases sat unprotected while the teardown
+  # docs described the two deliberate commands needed to delete them.
+  gcloud firestore databases update --database="$db" --delete-protection >/dev/null || {
+    echo "ERROR: could not enable delete protection on $db." >&2
+    echo "       Run 'gcloud components update' and re-run this script." >&2
+    exit 1
+  }
 done
 
-# Firestore security rules are deployed by the Firebase CLI, not by gcloud -- there is no
-# `gcloud firestore rules` command group. An earlier version of this script called one and
-# swallowed the failure, so it reported success while the rules were never deployed: the
-# browser-path half of the append-only guarantee silently absent on a project that looked
-# fully provisioned.
-if [[ -f deploy/firestore.rules ]]; then
-  if command -v firebase >/dev/null 2>&1; then
-    # firebase.json maps each rule set to its NAMED database. Without it the CLI targets
-    # `(default)`, which Karani does not use -- it would report success and guard neither.
-    [[ -f firebase.json ]] || { echo "ERROR: firebase.json missing; rules would target (default)." >&2; exit 1; }
-    firebase deploy --only firestore:rules --project "$PROJECT" \
-      || { echo "ERROR: firestore rules failed to deploy. The browser write path is UNGUARDED." >&2; exit 1; }
-  else
-    cat >&2 <<'RULES'
-
-ACTION REQUIRED -- Firestore rules are NOT deployed.
-
-deploy/firestore.rules guards the browser write path (KAR-102, KAR-312). The custom IAM
-role covers service accounts; these rules cover everything else, and neither substitutes
-for the other.
-
-  npm i -g firebase-tools && firebase login
-  firebase deploy --only firestore:rules --project PROJECT_ID
-
-Not deploying them leaves grades/ writable from a browser session. This script will not
-pretend otherwise.
-RULES
-  fi
-fi
+# Firestore security rules, via the Firebase Rules REST API with the gcloud CLI's own
+# token. This block used to shell out to `firebase deploy`, which requires an interactive
+# `firebase login` -- a second, browser-based OAuth flow for the SAME identity gcloud
+# already holds. On deploy day the operator had never run it on that machine, the CLI
+# refused, and this script correctly halted with the browser write path unguarded -- but
+# halted on a dependency the deploy never needed. scripts/deploy_firestore_rules.py does
+# what the CLI does in two HTTP calls per database, reads the database-to-rules mapping
+# from the same firebase.json, and verifies each release by reading it back.
+say "Firestore security rules"
+[[ -f firebase.json ]] || { echo "ERROR: firebase.json missing; rules would target (default)." >&2; exit 1; }
+gcloud services enable firebaserules.googleapis.com --project="$PROJECT" >/dev/null
+python3 scripts/deploy_firestore_rules.py "$PROJECT" \
+  || { echo "ERROR: firestore rules failed to deploy. The browser write path is UNGUARDED." >&2; exit 1; }
 
 # --- custom role: create + get, no update, no delete -----------------------------------
 say "Custom IAM role (append-only)"

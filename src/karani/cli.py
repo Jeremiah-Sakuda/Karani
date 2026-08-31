@@ -308,7 +308,20 @@ def cmd_preflight(args: argparse.Namespace) -> int:
 
     from google import genai
 
-    client = genai.Client(vertexai=True, project=settings.project, location=settings.location)
+    from karani.analysis.client import _resolve_credentials
+
+    # The same credential resolution as the live pipeline: ADC when present, the gcloud
+    # CLI's own token otherwise. This check ran on deploy day with neither wired in and
+    # reported both pinned models as failures -- with advice to "fix config.py" -- when the
+    # models were fine and the preflight itself was the only thing that couldn't
+    # authenticate. A check that fails for a reason its subject doesn't have is worse than
+    # no check: it sends the operator to fix the wrong thing, on the day there is no time.
+    client = genai.Client(
+        vertexai=True,
+        project=settings.project,
+        location=settings.location,
+        credentials=_resolve_credentials(),
+    )
     failures = 0
     for role, model_id in (("analysis", MODEL_ANALYSIS), ("verify", MODEL_VERIFY)):
         try:
