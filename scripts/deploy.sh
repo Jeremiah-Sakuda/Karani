@@ -110,6 +110,11 @@ INSTRUCTOR_TOKEN="${EXISTING_TOKEN:-$(openssl rand -hex 24)}"
 
 # min-instances=0: the docket must survive to Oct 1 without accumulating idle cost, and a
 # cold start on a static pre-rendered golden run is a second, not a minute.
+# Cross-service nav links (KARANI_ARENA_URL / KARANI_DOCKET_URL) come from describing the
+# already-deployed services. On the very first deploy the other service does not exist yet,
+# the describe returns empty, and the nav simply omits that link until the next deploy.
+ARENA_NAV_URL=$(gcloud run services describe karani-arena --region="$REGION" --format='value(status.url)' 2>/dev/null || true)
+
 gcloud run deploy karani-docket \
   --image="$IMAGE" \
   --region="$REGION" \
@@ -118,7 +123,7 @@ gcloud run deploy karani-docket \
   --min-instances=0 \
   --max-instances=4 \
   --memory=1Gi \
-  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},KARANI_STORE_BACKEND=firestore,KARANI_INSTRUCTOR_TOKEN=${INSTRUCTOR_TOKEN}" \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},KARANI_STORE_BACKEND=firestore,KARANI_INSTRUCTOR_TOKEN=${INSTRUCTOR_TOKEN},KARANI_ARENA_URL=${ARENA_NAV_URL},KARANI_DOCKET_URL=" \
   --port=8080
 
 # The arena (KAR-419): public bring-your-own-essay page. Runs under the ANALYSIS identity,
@@ -134,7 +139,7 @@ gcloud run deploy karani-arena \
   --max-instances=1 \
   --memory=1Gi \
   --timeout=120 \
-  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},KARANI_MODEL_BACKEND=vertex" \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},KARANI_MODEL_BACKEND=vertex,KARANI_DOCKET_URL=$(gcloud run services describe karani-docket --region="$REGION" --format='value(status.url)' 2>/dev/null || true)" \
   --command=python \
   --args="-m,karani.arena" \
   --port=8080

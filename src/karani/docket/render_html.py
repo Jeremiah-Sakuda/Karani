@@ -127,6 +127,11 @@ details>summary{cursor:pointer;color:var(--accent);font-size:.88rem}
   color:var(--ink);font-size:.92rem}
 nav.crumbs{font:500 11px/1 "JetBrains Mono",ui-monospace,monospace;
   letter-spacing:.08em;margin-bottom:1.6rem}
+nav.site{font:500 10px/1.8 "JetBrains Mono",ui-monospace,monospace;
+  letter-spacing:.12em;text-transform:uppercase;margin:-1.4rem 0 2rem;
+  display:flex;flex-wrap:wrap;gap:.35rem 1.1rem}
+nav.site a{color:var(--muted);text-decoration:none}
+nav.site a:hover{color:var(--accent)}
 footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);
   color:var(--muted);font-size:.84rem}
 .layers{counter-reset:l;list-style:none;padding:0;margin:.8rem 0}
@@ -164,7 +169,32 @@ def page(title: str, body: str) -> str:
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,500&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <title>{_e(title)}</title><style>{CSS}</style></head>
-<body><div class="wrap"><p class="brand">KARANI</p>{body}</div></body></html>"""
+<body><div class="wrap"><p class="brand">KARANI</p>{_site_nav()}{body}</div></body></html>"""
+
+
+def _site_nav() -> str:
+    """One nav bar on every page, so the whole demo is clicks from a single starting tab.
+
+    The docket and the arena are different Cloud Run services, so cross-links come from
+    env (set by deploy.sh via service discovery); when a target's URL is unknown -- local
+    runs, or the very first deploy -- its link is simply absent rather than broken.
+    """
+    import os as _os
+
+    docket = _os.environ.get("KARANI_DOCKET_URL", "").rstrip("/")
+    arena = _os.environ.get("KARANI_ARENA_URL", "").rstrip("/")
+    links = [
+        ("Overview", f"{docket}/"),
+        ("Morning brief", f"{docket}/brief"),
+        ("Replay the night", f"{docket}/replay"),
+        ("The boundary", f"{docket}/boundary"),
+        ("Scholarship", f"{docket}/scholarship"),
+        ("Challenge", f"{docket}/challenge"),
+    ]
+    if arena:
+        links.append(("Arena ↗", f"{arena}/"))
+    items = "".join(f'<a href="{_e(href)}">{_e(label)}</a>' for label, href in links)
+    return f'<nav class="site">{items}</nav>'
 
 
 def _outcome_of(obs: dict[str, Any]) -> str:

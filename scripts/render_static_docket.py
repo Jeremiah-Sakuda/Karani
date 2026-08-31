@@ -38,6 +38,10 @@ def rewrite_links(html: str) -> str:
     """Turn the app's routes into relative file paths for static hosting."""
     html = html.replace('href="/"', 'href="index.html"')
     html = html.replace('href="/challenge"', 'href="challenge.html"')
+    # Server-only surfaces have no static page; in an export their nav entries point home
+    # rather than at a 404.
+    for server_only in ("/brief", "/replay", "/boundary", "/scholarship"):
+        html = html.replace(f'href="{server_only}"', 'href="index.html"')
     html = html.replace('action="/challenge"', 'action="challenge.html"')
     html = html.replace('href="/student/', 'href="student-')
     html = html.replace('href="/appeal/', 'href="appeal-')
