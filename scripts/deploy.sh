@@ -82,6 +82,32 @@ fi
 
 # --- docket service --------------------------------------------------------------------
 say "Cloud Run service (docket)"
+# The docket is deployed --allow-unauthenticated on purpose: the public challenge box is the
+# most direct demonstration this project has, and it must work with no login and no quota.
+#
+# But reads and writes are not the same request. /edit appends events to the log and /ratify
+# writes to the instructor's Drive, and both were reachable by anyone who found the URL --
+# under an identity story with five service accounts and its own diagram. So the deployed
+# service carries an instructor token; reads stay open, writes need one visit to
+# /unlock?token=...
+#
+# Reused across deploys when one already exists, so a redeploy does not silently invalidate
+# the URL the instructor has. Generated locally and never echoed to the build log.
+EXISTING_TOKEN=$(
+  gcloud run services describe karani-docket --region="$REGION" --format=json 2>/dev/null \
+    | python3 -c '
+import json, sys
+try:
+    spec = json.load(sys.stdin)["spec"]["template"]["spec"]["containers"][0]
+except Exception:
+    sys.exit(0)
+for var in spec.get("env", []):
+    if var.get("name") == "KARANI_INSTRUCTOR_TOKEN":
+        print(var.get("value", ""))
+' 2>/dev/null || true
+)
+INSTRUCTOR_TOKEN="${EXISTING_TOKEN:-$(openssl rand -hex 24)}"
+
 # min-instances=0: the docket must survive to Oct 1 without accumulating idle cost, and a
 # cold start on a static pre-rendered golden run is a second, not a minute.
 gcloud run deploy karani-docket \
@@ -92,7 +118,7 @@ gcloud run deploy karani-docket \
   --min-instances=0 \
   --max-instances=4 \
   --memory=1Gi \
-  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},KARANI_STORE_BACKEND=firestore" \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},KARANI_STORE_BACKEND=firestore,KARANI_INSTRUCTOR_TOKEN=${INSTRUCTOR_TOKEN}" \
   --port=8080
 
 URL=$(gcloud run services describe karani-docket --region="$REGION" --format='value(status.url)')
@@ -100,6 +126,9 @@ URL=$(gcloud run services describe karani-docket --region="$REGION" --format='va
 say "Deployed"
 cat <<EOF
 docket        $URL
+unlock        $URL/unlock?token=$INSTRUCTOR_TOKEN
+              ^ the only place this token is printed. Reads are public; editing and
+                ratification need this link once, then a session cookie for 12 hours.
 challenge     $URL/challenge     (free, unmetered, no login -- KAR-412)
 job           gcloud run jobs execute karani-run --region=$REGION
 scheduler     gcloud scheduler jobs describe karani-nightly --location=$REGION
