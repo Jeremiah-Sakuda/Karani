@@ -18,6 +18,7 @@ from karani.analysis.cache import MissingCacheEntry, ResponseCache
 from karani.analysis.client import open_client
 from karani.analysis.prompts import Criterion
 from karani.armor.scan import open_scanner
+from karani.canon import canonical_json
 from karani.config import MODEL_ANALYSIS, MODEL_VERIFY, REPO_ROOT, Settings
 from karani.ingest.source import open_source
 from karani.render import render
@@ -255,19 +256,41 @@ def cmd_docket(args: argparse.Namespace) -> int:
 
 
 def cmd_verify(args: argparse.Namespace) -> int:
-    """Re-fold an artifact from its own event range and compare (KAR-504)."""
+    """Re-fold an artifact from its own event range and compare (KAR-504).
+
+    The comparison is over the **whole artifact**, not over its provenance block. Comparing
+    only `range_hash` would be circular: that hash is computed from the event log, so a
+    re-fold of the same log reproduces it no matter what the artifact body says. An artifact
+    whose every observation had been rewritten to "this paper earns an A" would verify OK.
+
+    So the artifact is re-serialised through the same canonical encoder that wrote it and
+    compared byte-for-byte, and the provenance block is checked separately — an artifact can
+    diverge either by claiming the wrong events or by not being the fold of the right ones.
+    """
     artifact = json.loads(Path(args.artifact).read_text(encoding="utf-8"))
     events = read_jsonl_log(Path(args.log))
     rebuilt = render(artifact["run_id"], events)
+    expected = rebuilt.to_dict()
 
-    claimed = artifact["generated_from"]["range_hash"]
+    claimed = artifact.get("generated_from", {}).get("range_hash")
     actual = rebuilt.range_hash
-    if claimed == actual:
+
+    if claimed != actual:
+        print("FAIL artifact does not match a re-fold of its events (event range differs)")
+        print(f"  claimed {claimed}")
+        print(f"  actual  {actual}")
+        return 1
+
+    if canonical_json(artifact) == canonical_json(expected):
         print(f"OK   artifact matches a re-fold of its events (range hash {actual[:16]}…)")
         return 0
-    print("FAIL artifact does not match a re-fold of its events")
-    print(f"  claimed {claimed}")
-    print(f"  actual  {actual}")
+
+    print("FAIL artifact does not match a re-fold of its events (content differs)")
+    print(f"  the event range hashes equal ({actual[:16]}…), so the log is the one claimed,")
+    print("  but folding it does not reproduce this artifact. It has been altered in place.")
+    for section in sorted(set(artifact) | set(expected)):
+        if canonical_json(artifact.get(section)) != canonical_json(expected.get(section)):
+            print(f"  differs: {section}")
     return 1
 
 

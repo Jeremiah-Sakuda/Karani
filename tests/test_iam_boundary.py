@@ -183,7 +183,12 @@ def test_client_surface_rejects_event_update():
     doc = client.collection("runs").document("run-emulator").collection("events").document("e1")
     doc.create({"step": "RunStarted", "run_id": "run-emulator"})
 
-    with pytest.raises((PermissionDenied, Exception)):
+    # `PermissionDenied` specifically. This previously read
+    # `pytest.raises((PermissionDenied, Exception))`, which a connection refusal, a
+    # `TypeError`, or a failed import all satisfy — so the test asserted that *something went
+    # wrong*, not that the rule denied the write. An emulator that was never reachable would
+    # have passed it, which is the one outcome it exists to rule out.
+    with pytest.raises(PermissionDenied):
         doc.update({"step": "Tampered"})
 
 

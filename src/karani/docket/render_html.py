@@ -247,7 +247,10 @@ no ranking, and no field anywhere in the system that could hold one —
 <div class="panel scroll">
   <table><tr><th>Criterion</th><th>Evidence located</th><th>No evidence</th>
   <th>Needs review</th></tr>{criteria_rows}</table>
-  <p class="sub" style="margin-top:.8rem">Counted from the claims projection, never generated.</p>
+  <p class="sub" style="margin-top:.8rem">Counted from the claims projection, never generated.
+  Each observation is counted once, under its one terminal outcome, so every column here
+  sums to the matching tile above. Abandoned work produces no claim and so has no column;
+  it appears in its tile and in the anomalies table.</p>
 </div>
 
 {excluded_block}
@@ -373,8 +376,12 @@ def student_page(run: RenderedRun, student_id: str) -> str:
 
     superseded = ""
     if sheet.superseded:
+        # Linted like every other generated surface. A verdict does not become safe to
+        # render by having been superseded — this block is the *original* model text, which
+        # is if anything the more likely of the two to carry one.
         items = "".join(
-            f"<li class='sub'>{_e(o.get('criterion_id'))}: {_e(o.get('text'))}</li>"
+            f"<li class='sub'>{_e(o.get('criterion_id'))}: "
+            f"{_e(lint_generated_text(str(o.get('text', ''))).text)}</li>"
             for o in sheet.superseded
         )
         superseded = (

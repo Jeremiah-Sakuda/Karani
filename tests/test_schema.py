@@ -40,6 +40,34 @@ def _base(**overrides):
     return payload
 
 
+def _valid_base(**overrides):
+    """A payload that is valid **on its own**, so a rejection can only come from the extra.
+
+    This distinction is the whole point and it was got wrong for a long time. `_base()`
+    builds `kind="evidence"` with no citation, which is independently invalid: every
+    `pytest.raises(ValidationError)` around it passed whether or not `extra="forbid"` was
+    set, because the citation rule raised first. An adversarial review flipped the setting
+    to `extra="allow"` and all 27 tests guarding the project's central claim kept passing —
+    for the wrong reason — while `Observation(**payload, score=0.87, letter_grade="A-")`
+    constructed cleanly and round-tripped the verdict through `model_dump()`.
+
+    So: a valid base, and `match=` on every raise, so the test fails if the error is the
+    right exception for the wrong reason.
+    """
+    payload = _base(
+        kind="no_evidence",
+        citation=None,
+        search_notes="scanned every registered span for this criterion; located nothing",
+    )
+    payload.update(overrides)
+    return payload
+
+
+def test_the_valid_base_is_actually_valid():
+    """The premise of every extra-field test below. Asserted, not assumed."""
+    Observation(**_valid_base())
+
+
 # --- KAR-101's three stated acceptance criteria --------------------------------------
 
 
@@ -106,8 +134,28 @@ def test_observation_rejects_extra_fields():
     schema would accept it — and every downstream consumer would then have a number to sort
     by. The structural claim depends on this setting.
     """
-    with pytest.raises(ValidationError):
-        Observation(**_base(score=0.8))
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        Observation(**_valid_base(score=0.8))
+
+
+def test_a_full_verdict_cannot_be_attached_to_a_valid_observation():
+    """The adversarial review's exact construction, as a regression test.
+
+    Three fields at once — a number to sort by, a letter to report, and a position in a
+    class ranking. Under `extra="allow"` this built a clean object and `model_dump()`
+    returned all three.
+    """
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        Observation(**_valid_base(score=0.87, letter_grade="A-", rank=1))
+
+
+def test_the_model_config_forbids_extras():
+    """The setting itself, read directly.
+
+    Belt and braces with the behavioural tests above: this one fails the instant someone
+    edits the config, without depending on any payload being shaped correctly.
+    """
+    assert Observation.model_config.get("extra") == "forbid"
 
 
 @pytest.mark.parametrize("field_name", sorted(BANNED_FIELD_NAMES))
@@ -117,8 +165,8 @@ def test_each_banned_field_name_is_rejected_individually(field_name):
     Parametrised so the failure names the specific field rather than reporting that "a test
     failed", and so the banned list cannot silently become decorative.
     """
-    with pytest.raises(ValidationError):
-        Observation(**_base(**{field_name: 1}))
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        Observation(**_valid_base(**{field_name: 1}))
 
 
 def test_no_evidence_requires_search_notes():

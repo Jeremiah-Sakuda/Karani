@@ -36,7 +36,12 @@ REPO_ROOT: Final[Path] = Path(__file__).resolve().parent.parent.parent
 # rather than as a broken demo.
 MODEL_ANALYSIS: Final[str] = os.environ.get("KARANI_MODEL_ANALYSIS", "gemini-3.6-flash")
 MODEL_VERIFY: Final[str] = os.environ.get("KARANI_MODEL_VERIFY", "gemini-3.5-flash-lite")
-MODEL_TRIAGE: Final[str] = os.environ.get("KARANI_MODEL_TRIAGE", "gemma-3-4b-it")
+# The Ollama model tag, not the Vertex model-garden name. `gemma-3-4b-it` is what Vertex
+# calls the model; `ollama pull` writes it to the local registry as `gemma3:4b`, and the
+# local triage tier talks to Ollama. With the Vertex name as the default, following the
+# manual checklist exactly still never ran Gemma — the tier reported `gemma_available:
+# false` on all 15 submissions while an operator watched `ollama list` show it present.
+MODEL_TRIAGE: Final[str] = os.environ.get("KARANI_MODEL_TRIAGE", "gemma3:4b")
 
 # Not configurable. See the module docstring.
 TEMPERATURE: Final[float] = 0.0

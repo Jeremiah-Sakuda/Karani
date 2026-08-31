@@ -46,6 +46,25 @@ TERMINAL_OUTCOMES = (
 )
 
 
+def _outcome_column(outcome: str | None) -> str | None:
+    """Map a terminal outcome onto the by-criterion table's column.
+
+    The two accepted outcomes collapse into one column because the table answers "did this
+    criterion end up with evidence", and whether it took one attempt or two is the retry
+    story, told by the tiles. Every other outcome maps one-to-one, so each column of the
+    table sums to exactly one tile.
+    """
+    if outcome in ("accepted_first_attempt", "accepted_after_retry"):
+        return "evidence"
+    if outcome in ("no_evidence", "needs_human"):
+        return outcome
+    # `abandoned` deliberately has no column. Abandoned work produces no claim, so it is
+    # absent from the projection this table is a count of; a column for it could only ever
+    # read 0, which would understate the outcome rather than report it. It is reported by
+    # its tile and by an entry in the anomalies table, both on the same page.
+    return None
+
+
 @dataclass
 class EvidenceSheet:
     student_id: str
@@ -76,6 +95,10 @@ class RenderedRun:
     source_events: list[str]
     range_hash: str
     renditions: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # observation_id -> terminal outcome. Deliberately not in `to_dict()`: it is the
+    # input the overview counts are folded from, not a separate published number, and
+    # shipping both would create a second place for the docket to disagree with itself.
+    outcome_by_observation: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -367,13 +390,25 @@ def render(run_id: str, events: list[Event]) -> RenderedRun:
     # Counted, never generated. Every number here is a length or a sum over the projection
     # directly above it, which is what makes KAR-404's acceptance criterion — the overview
     # matches a direct count of the same projection — a tautology rather than a coincidence.
+    #
+    # Both this table and the outcome tiles below are counted from the **same** terminal
+    # outcome per observation, so a column here sums to its tile there. That identity is not
+    # decorative: an adversarial review found the docket showing "no evidence located: 1" in
+    # a tile and `no_evidence = 2` in this table, on one screen, each footnoted "counted from
+    # the claims projection." Both counts were honest and they measured different things —
+    # the tile counted terminal outcome, the table counted `kind` — and an observation that
+    # found nothing *and* was escalated landed in a different column of each.
+    #
+    # A reader cannot audit a page that disagrees with itself, and "these two numbers differ
+    # because they count different units" is an explanation, not a defence. So there is now
+    # one unit. `test_docket_self_consistency.py` asserts the identity directly.
     by_criterion: dict[str, dict[str, int]] = {}
     for o in claims:
         cid = str(o.get("criterion_id", ""))
         bucket = by_criterion.setdefault(cid, {"evidence": 0, "no_evidence": 0, "needs_human": 0})
-        bucket["evidence" if o.get("kind") == "evidence" else "no_evidence"] += 1
-        if o.get("needs_human"):
-            bucket["needs_human"] += 1
+        column = _outcome_column(outcome.get(str(o.get("observation_id", ""))))
+        if column is not None:
+            bucket[column] += 1
 
     outcome_counts = {name: 0 for name in TERMINAL_OUTCOMES}
     for value in outcome.values():
@@ -413,6 +448,7 @@ def render(run_id: str, events: list[Event]) -> RenderedRun:
         run_id=run_id,
         sheets=sheets,
         overview=overview,
+        outcome_by_observation=dict(outcome),
         claims=claims,
         anomalies=sorted(anomalies, key=lambda a: (a.kind, a.student_id, a.event_id)),
         excluded=sorted(excluded, key=lambda x: str(x["student_id"])),
