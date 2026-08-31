@@ -329,7 +329,17 @@ def student_page(run: RenderedRun, student_id: str) -> str:
             )
 
         if obs.get("needs_human_reason"):
-            body += f'<p class="sub">Escalated: {_e(obs["needs_human_reason"])}</p>'
+            # LINTED, like every other generated string on this page.
+            #
+            # This field was the one exception, and it was the worst possible one to miss: it
+            # is free text from the verification model, uncited and unvalidated, and it exists
+            # specifically to express disagreement about a submission -- which makes it the
+            # field most likely to phrase something verdict-shaped. It reached the
+            # instructor's screen unlinted while four layers guarded everything around it.
+            escalation = lint_generated_text(str(obs["needs_human_reason"]))
+            body += f'<p class="sub">Escalated: {_e(escalation.text)}</p>'
+            if escalation.masked:
+                chips.append('<span class="chip strong">verdict language masked</span>')
 
         blocks += f"""
 <div class="obs{" flagged" if obs.get("needs_human") else ""}">

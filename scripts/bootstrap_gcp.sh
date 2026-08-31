@@ -99,6 +99,9 @@ done
 # fully provisioned.
 if [[ -f deploy/firestore.rules ]]; then
   if command -v firebase >/dev/null 2>&1; then
+    # firebase.json maps each rule set to its NAMED database. Without it the CLI targets
+    # `(default)`, which Karani does not use -- it would report success and guard neither.
+    [[ -f firebase.json ]] || { echo "ERROR: firebase.json missing; rules would target (default)." >&2; exit 1; }
     firebase deploy --only firestore:rules --project "$PROJECT" \
       || { echo "ERROR: firestore rules failed to deploy. The browser write path is UNGUARDED." >&2; exit 1; }
   else

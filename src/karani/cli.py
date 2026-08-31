@@ -48,7 +48,21 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     criteria = load_criteria(rubric)
     cache = ResponseCache(settings.cache_dir)
-    backend = "cache" if args.offline else settings.model_backend
+    # --offline and --live both DECIDE the backend. `--live` used to be decorative: it was
+    # declared, never read, and the backend came only from KARANI_MODEL_BACKEND (default
+    # "cache"). So `karani run --live` silently replayed the committed cache while printing
+    # nothing to contradict the operator -- and RUNBOOK beat 2 is "trigger it live" on camera.
+    # A cache replay narrated as a live call is precisely the substitution this project's
+    # thesis forbids, so the flag now means what it says.
+    if args.offline and args.live:
+        print("--offline and --live are mutually exclusive", file=sys.stderr)
+        return 2
+    if args.live:
+        backend = "vertex"
+    elif args.offline:
+        backend = "cache"
+    else:
+        backend = settings.model_backend
     client = open_client(backend, cache, project=settings.project, location=settings.location)
     scanner = open_scanner(template=settings.armor_template, project=settings.project)
 
@@ -145,7 +159,14 @@ def cmd_run(args: argparse.Namespace) -> int:
         f"abandoned {len(summary.abandoned)}"
     )
     print(f"events    {summary.events_written}")
-    print(f"model     {summary.model_calls} calls ({summary.cached_calls} from cache)")
+    served = (
+        "LIVE Vertex AI"
+        if backend == "vertex" and summary.cached_calls < summary.model_calls
+        else "committed cache (no model was called)"
+        if summary.cached_calls == summary.model_calls
+        else "mixed"
+    )
+    print(f"model     {summary.model_calls} calls ({summary.cached_calls} from cache) -- {served}")
     print()
     print("terminal outcomes")
     for name, count in sorted(rendered.overview["terminal_outcomes"].items()):

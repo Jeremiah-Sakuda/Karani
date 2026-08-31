@@ -1,0 +1,17 @@
+{
+  "_comment": [
+    "Firestore rules are deployed PER DATABASE. Without this file, `firebase deploy --only",
+    "firestore:rules` targets `(default)` -- which Karani does not use. It would report",
+    "success and guard neither database: events and grades both live in named databases",
+    "(karani-events, karani-grades), and the browser write path to grades would be left",
+    "open while the checklist showed green.",
+    "",
+    "The two rule sets differ because the two databases have opposite postures. Events are",
+    "world-readable and create-only. Grades are readable only by an authenticated person and",
+    "writable only by that person, and nothing about them is public."
+  ],
+  "firestore": [
+    { "database": "karani-events", "rules": "deploy/firestore.rules" },
+    { "database": "karani-grades", "rules": "deploy/firestore-grades.rules" }
+  ]
+}

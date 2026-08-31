@@ -10,9 +10,9 @@ passing item elsewhere.
 
 | Requirement | Karani's answer | Status |
 |---|---|---|
-| Gemini 3.5 or newer, via Gemini API or Vertex AI | `gemini-3.6-flash` (analysis) and `gemini-3.5-flash-lite` (entailment, lint assist), via **Vertex AI**. Pinned ID strings, never aliases. Both are ≥3.5. See [DEVIATIONS.md](DEVIATIONS.md) D-001 for why the PRD's `gemini-3.5-pro` was not used — it does not exist — and why `gemini-3.1-pro-preview` would have **failed** this requirement | Pinned; live call **OPEN** pending billing |
+| Gemini 3.5 or newer, via Gemini API or Vertex AI | `gemini-3.6-flash` (analysis) and `gemini-3.5-flash-lite` (entailment, lint assist), via **Vertex AI**. Pinned ID strings, never aliases. Both are ≥3.5. See [DEVIATIONS.md](DEVIATIONS.md) D-001 for why the PRD's `gemini-3.5-pro` was not used — it does not exist — and why `gemini-3.1-pro-preview` would have **failed** this requirement | **VERIFIED.** Both IDs resolved against live Vertex AI, and 187 responses from two real 16-submission runs are committed in `fixtures/cache/` |
 | ≥1 Google Agent Framework | **Google ADK** (orchestration) and **GenAI SDK** (model access), dual-listed | Pinned; see [antigravity/decision.md](antigravity/decision.md) |
-| ≥1 Google Cloud infrastructure service | Cloud Run Jobs (analysis fan-out), Cloud Run service (docket), Firestore (event log + claims), Cloud Scheduler (nightly trigger) | **OPEN** pending billing |
+| ≥1 Google Cloud infrastructure service | Cloud Run Jobs (analysis fan-out), Cloud Run service (docket), Firestore (event log + claims), Cloud Scheduler (nightly trigger) | Scripted and complete (`scripts/bootstrap_gcp.sh`, `scripts/deploy.sh`); **NOT YET DEPLOYED** — this is the one mandatory requirement still unapplied |
 
 ## Category
 
@@ -31,7 +31,7 @@ over one named instructor's real grading load.
 - Design lineage with the sibling entry is disclosed as **pattern, not code**, in the README
   under `## Relationship to my other submissions`.
 
-## Startup Excellence eligibility — **OPEN**
+## Startup Excellence eligibility — **NOT PURSUED** (decided 2026-08-31)
 
 The prize requires submitting on behalf of an incorporated organization **and** providing a
 corporate email address. Three questions, none yet answered in writing:
@@ -43,12 +43,18 @@ corporate email address. Three questions, none yet answered in writing:
 3. Does entering as a company foreclose the Individual/Hobbyist pool for this entry?
 
 The Devpost account on file uses an `@bu.edu` address, which is an educational domain and not
-a corporate one. Until question 2 is answered, Startup Excellence eligibility is unproven and
-no submission copy asserts it.
+a corporate one.
+
+**Decision, on submission day: this prize is not pursued.** None of the three questions can be
+answered in the hours remaining, MX remediation alone has a 1–2 day tail, and question 3 is the
+decisive one — entering as a company plausibly forecloses the Individual/Hobbyist pool, which is
+a lane this entry is genuinely competitive in. Trading a lane we qualify for against one we
+cannot document is the wrong trade. No submission copy asserts Startup Excellence eligibility.
 
 ## Budget and endpoint fencing
 
 - Budget alerts at **$25 / $50 / $100 / $140**: **OPEN** — to be armed in the console.
+- Deploy project: **`asili-xprize-2026`** (billing enabled). `asili-61171` was abandoned for lack of billing and is untouched.
 - Split: **$95 dev / $40 recording / $15 Sept–Oct uptime**.
 - Billing alerts lag up to 24 hours. Actual billing is read daily during recording week
   rather than trusted to alerts.
@@ -76,8 +82,8 @@ real company or person is named as a bad actor in any fixture, test, comment, or
 |---|---|
 | Hosted project URL, loads logged-out | **OPEN** |
 | Public repository URL | https://github.com/Jeremiah-Sakuda/Karani |
-| README with spin-up instructions, `make demo` on line 1 | **OPEN** |
-| Architecture diagram | **OPEN** |
+| README with spin-up instructions, `make demo` on line 1 | **DONE** — verified from a clean clone |
+| Architecture diagram | **DONE** — `docs/architecture/diagram_a_system.svg` (+ PNG) and `diagram_b_identity.svg`, both embedded in the README |
 | Demo video ≤4:00, public on YouTube or Vimeo, English | **OPEN** |
 | Text description in PRD §1.3 order | **OPEN** |
 | Bonus: blog post with the created-for-this-hackathon language | **OPEN** |

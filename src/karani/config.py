@@ -31,9 +31,9 @@ REPO_ROOT: Final[Path] = Path(__file__).resolve().parent.parent.parent
 # gemini-3.1-pro-preview -- which is *older* than 3.5 and would fail the mandatory
 # requirement. The full reasoning is in docs/DEVIATIONS.md D-001.
 #
-# scripts/preflight_models.py resolves every ID below against the live publisher catalogue
-# and fails loudly on a miss, so a model renamed or withdrawn before judging shows up as a
-# red check rather than as a broken demo.
+# `karani preflight` resolves every ID below against the live publisher catalogue and fails
+# loudly on a miss, so a model renamed or withdrawn before judging shows up as a red check
+# rather than as a broken demo.
 MODEL_ANALYSIS: Final[str] = os.environ.get("KARANI_MODEL_ANALYSIS", "gemini-3.6-flash")
 MODEL_VERIFY: Final[str] = os.environ.get("KARANI_MODEL_VERIFY", "gemini-3.5-flash-lite")
 MODEL_TRIAGE: Final[str] = os.environ.get("KARANI_MODEL_TRIAGE", "gemma-3-4b-it")

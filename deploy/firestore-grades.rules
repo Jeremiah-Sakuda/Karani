@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// Rules for the GRADES database (`karani-grades`), which holds nothing else.
+//
+// This file covers the BROWSER path only. Server clients -- every Cloud Run service account --
+// are authorised by IAM and never evaluate these rules at all. The IAM half of the guarantee is
+// that no pipeline identity holds any binding on this database: bootstrap_gcp.sh conditions the
+// append-only role on the EVENTS database by name, so a pipeline SA reaching here is denied
+// before any rule is consulted.
+//
+// Both halves are required. Rules alone would leave every service account unrestricted; the IAM
+// condition alone would leave the browser unrestricted.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /grades/{gradeId} {
+      // A person, never a service account. The sign_in_provider check is the difference:
+      // `request.auth != null` alone would be satisfied by a service account holding a custom
+      // token, which is exactly the identity this database exists to exclude.
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+                            && request.auth.token.firebase.sign_in_provider != 'custom'
+                            && request.resource.data.actor == request.auth.uid;
+      allow delete: if false;
+
+      // Create-only. A grade may be revised; the record that it was revised may not be
+      // removed. An instructor changing a grade is ordinary. An instructor's revision history
+      // vanishing is the thing an appeal would have turned on.
+      match /history/{entryId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+                      && request.auth.token.firebase.sign_in_provider != 'custom';
+        allow update, delete: if false;
+      }
+    }
+
+    // Nothing else exists in this database, and nothing else may be created in it.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
