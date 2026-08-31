@@ -31,7 +31,12 @@ def test_beat_six_names_an_observation_that_was_actually_escalated(escalations):
     are correct. Filming an override of a right answer, narrated as the system being wrong,
     would have staged the one thing this project cannot afford to fake.
     """
-    beat = RUNBOOK.read_text(encoding="utf-8").split("## Beat 6")[1].split("## Beat 7")[0]
+    text = RUNBOOK.read_text(encoding="utf-8")
+    # Located by title, not number: the beats renumbered when the replay, brief, arena and
+    # scholarship shots joined the script, and a test pinned to "Beat 6" would have parsed
+    # the injection beat and failed for the wrong reason.
+    sections = text.split("\n## ")
+    beat = next(sec for sec in sections if "the hero beat" in sec.splitlines()[0])
     named = set(re.findall(r"`(s\d\d)` ?,? ?(?:criterion )?`(c\d)`", beat))
     assert named, "Beat 6 names no submission/criterion pair to film"
     unreal = named - escalations
