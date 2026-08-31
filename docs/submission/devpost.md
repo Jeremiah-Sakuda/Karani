@@ -14,8 +14,16 @@ text description field.
 
 ## Karani — evidence without verdicts
 
-**An autonomous overnight batch agent that prepares grading evidence for instructors and is
-architecturally incapable of issuing a grade.**
+**Most AI agents are pitched on what they can do. Karani is built around what it
+deliberately cannot: an autonomous overnight agent that prepares everything an instructor
+needs to judge — and cannot judge, because the judgment is the professional's work, and we
+kept it that way on purpose.**
+
+Not "won't". Cannot. The restraint is architecture, not a system prompt: no field on any
+record can hold a grade, and the database where grades live is one no part of the pipeline
+holds a key to. We think this is where high-stakes agents are headed — competence at the
+evidence, and a designed incapability at the verdict — and Karani is a working instance of
+the pattern, deployed, with the incapability under test.
 
 One sentence for the skeptic who reads "batch LLM calls": the model calls are the cheapest
 part of this system — the contribution is the **constraint system around them**, five

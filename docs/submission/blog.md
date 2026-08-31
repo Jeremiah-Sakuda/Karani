@@ -14,7 +14,13 @@ Publish **publicly**, not unlisted. Then paste the URL into `docs/submission/dev
 *I created this piece of content for the purposes of entering the All Things Agentic
 Hackathon.*
 
-I built an agent that reads student essays and refuses to grade them.
+Most AI agents are pitched on what they can do. This one is built around what it
+deliberately leaves out.
+
+I built an agent that reads student essays and prepares everything an instructor needs to
+grade them — and cannot grade them itself. The judgment is the professional's work, and I
+kept it that way on purpose, in the architecture, where a product update can't quietly take
+it back.
 
 Not "declines to". Cannot. There is no field on any record in the system that could hold a
 grade, the schema rejects fields it doesn't recognise, and grades live in a **separate

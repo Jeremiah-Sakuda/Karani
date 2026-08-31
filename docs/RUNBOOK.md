@@ -50,10 +50,16 @@ All preconditions are green. What remains is staging.
 findings, each cited to the student's own words." Burned-in lower third from **second 1**:
 *"Karani prepares evidence. It cannot grade."*
 
-**Say:** the friction in one sentence — *"Grading time is mostly evidence-gathering:
-finding the passage that justifies the feedback, forty times a night."* Then the thesis:
+**Say — the frame first, then the thesis:**
 
-> *"Karani prepares the case. You decide it. It is only ever the clerk."*
+> *"Most AI agents are pitched on what they can do. This one is built around what it
+> deliberately leaves out."*
+
+One sentence of friction — *"grading time is mostly evidence-gathering: finding the passage
+that justifies the feedback, forty times a night"* — then:
+
+> *"Karani prepares the case. You decide it. The judgment belongs to the professional, and
+> we kept it that way on purpose."*
 
 **Property:** the refusal is legible in the first 8 seconds to a viewer with no audio.
 
@@ -171,8 +177,11 @@ grade."*
 architecture diagram.
 
 **Say:** *"Everything you saw is rebuilt from a permanent record that can only be added
-to — defensible by construction, not by promise."* Beat. *"Karani prepares the case. You
-decide it. It is only ever the clerk."*
+to — defensible by construction, not by promise."* Beat, then close the loop on the
+opening frame:
+
+> *"Every agent you'll see today is proud of what it does. This one is proud of what it
+> leaves out — because that work belongs to you."*
 
 ---
 

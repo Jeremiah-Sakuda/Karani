@@ -65,6 +65,11 @@ downstream system, and no aggregate can be computed.
 
 ## What makes this different from an auto-grader
 
+Most AI agents are pitched on what they can do. Karani is built around what it deliberately
+leaves out: the judgment, which belongs to the professional. An agent that grades faster is
+an auto-grader with better manners; an agent that *cannot* grade — and can prove it — is a
+colleague an instructor can safely hand the night shift to.
+
 An auto-grader's product is the score. Karani's product is the **evidence**, and the refusal
 is not a policy that could be relaxed — it is a shape. There is no field on any record in this
 system that could hold a grade. The observation schema forbids unknown fields, so one cannot

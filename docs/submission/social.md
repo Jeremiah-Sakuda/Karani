@@ -72,10 +72,11 @@ Paste the URLs into `docs/submission/devpost.md` when posted.
 
 **X (thread opener):**
 
-> I built a grading agent that cannot grade.
+> Most AI agents compete on what they can do. I built one that competes on what it can't.
 >
-> Not "won't" — cannot. No field on any record could hold a score, and grades live in a
-> separate database that denies every pipeline service account write access.
+> A grading agent that cannot grade — not "won't", cannot. No field on any record could
+> hold a score, and grades live in a database it holds no key to. The judgment stays with
+> the professional, by construction.
 >
 > There's a public box where you can try to break it 👇
 >
